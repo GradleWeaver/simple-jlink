@@ -1,0 +1,7 @@
+jlink {
+    configure {
+//        register("something") {
+//
+//        }
+    }
+}

@@ -80,7 +80,7 @@ pluginBundle {
     tags = listOf("jlink")
 
     plugins {
-        create("PlatformReleases") {
+        create("jlink-plugin") {
             id = plugin.id
             displayName = plugin.displayName
         }

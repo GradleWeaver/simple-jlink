@@ -50,6 +50,8 @@ class JLinkPluginTest: AbstractPluginTest() {
 
                 apply(plugin = "org.gradleweaver.plugins.simple-jlink")
 
+                tasks.all {}
+
                 jlink {
                     "example" {
                         useMinimalImage()

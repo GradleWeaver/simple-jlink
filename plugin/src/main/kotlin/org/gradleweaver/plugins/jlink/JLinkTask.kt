@@ -4,11 +4,13 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.jvm.Jvm
+import org.gradle.kotlin.dsl.property
 import java.io.ByteArrayOutputStream
 import java.nio.charset.Charset
 import javax.inject.Inject
@@ -16,76 +18,78 @@ import javax.inject.Inject
 // Note: must be open so Gradle can create a proxy subclass
 open class JLinkTask @Inject constructor(val options: JLinkOptions) : DefaultTask() {
 
+    private val objectFactory = project.objects
+    
     /**
      * The modules to link. These MUST be on the module path or included in the JDK. If not set, `jdeps` will be run
      * on the output JAR file from [shadowTask] to automatically determine the modules used.
      */
-    @Input
-    var modules: List<String> = listOf()
+    @get:Input
+    val modules: ListProperty<String> = objectFactory.listProperty(String::class.java)
 
     /**
      * Link service provider modules and their dependencies.
      */
-    @Input
-    var bindServices = false
+    @get:Input
+    val bindServices = objectFactory.property<Boolean>()
 
     /**
      * Enable compression of resources.
      */
-    @Input
-    var compressionLevel: CompressionLevel = CompressionLevel.NONE
+    @get:Input
+    val compressionLevel = objectFactory.property<CompressionLevel>()
 
     /**
      * Specifies the byte order of the generated image. The default value is the format of your system's architecture.
      */
-    @Input
-    var endianness: Endianness = Endianness.SYSTEM_DEFAULT
+    @get:Input
+    val endianness = objectFactory.property<Endianness>()
 
     /**
      * Suppresses a fatal error when signed modular JARs are linked in the runtime image.
      * The signature-related files of the signed modular JARs are not copied to the runtime image.
      */
-    @Input
-    var ignoreSigningInformation = false
+    @get:Input
+    val ignoreSigningInformation  = objectFactory.property<Boolean>()
 
     /**
      * Specifies the module path.
      */
-    @Input
-    var modulePath = ""
+    @get:Input
+    val modulePath = objectFactory.property<String>()
 
     /**
      * Excludes header files from the generated image.
      */
-    @Input
-    var excludeHeaderFiles = false
+    @get:Input
+    val excludeHeaderFiles  = objectFactory.property<Boolean>()
 
     /**
      * Excludes man pages from the generated image.
      */
-    @Input
-    var excludeManPages = false
+    @get:Input
+    val excludeManPages  = objectFactory.property<Boolean>()
 
     /**
      * Strips debug symbols from the generated image.
      */
-    @Input
-    var stripDebug = false
+    @get:Input
+    val stripDebug  = objectFactory.property<Boolean>()
 
     /**
      * Optimize `Class.forName` calls to constant class loads.
      */
-    @Input
-    var optimizeClassForName = false
+    @get:Input
+    val optimizeClassForName  = objectFactory.property<Boolean>()
 
-    @InputFile
-    var applicationJarLocation: RegularFileProperty = newInputFile()
+    @get:InputFile
+    val applicationJarLocation: RegularFileProperty = newInputFile()
 
     /**
      * The directory in which the jlink image should be build. By default, this is is `${project.buildDir}/jlink`.
      */
-    @OutputDirectory
-    var jlinkDir: DirectoryProperty = newOutputDirectory()
+    @get:OutputDirectory
+    val jlinkDir: DirectoryProperty = newOutputDirectory()
 
     init {
         copyFromOptions(options)
@@ -93,16 +97,16 @@ open class JLinkTask @Inject constructor(val options: JLinkOptions) : DefaultTas
     }
 
     private fun copyFromOptions(options: JLinkOptions) {
-        this.modules = options.modules
-        this.bindServices = options.bindServices
-        this.compressionLevel = options.compressionLevel
-        this.endianness = options.endianness
-        this.ignoreSigningInformation = options.ignoreSigningInformation
-        this.modulePath = options.modulePath
-        this.excludeHeaderFiles = options.excludeHeaderFiles
-        this.excludeManPages = options.excludeManPages
-        this.stripDebug = options.stripDebug
-        this.optimizeClassForName = options.optimizeClassForName
+        this.modules.set(options.modules)
+        this.bindServices.set(options.bindServices)
+        this.compressionLevel.set(options.compressionLevel)
+        this.endianness.set(options.endianness)
+        this.ignoreSigningInformation.set(options.ignoreSigningInformation)
+        this.modulePath.set(options.modulePath)
+        this.excludeHeaderFiles.set(options.excludeHeaderFiles)
+        this.excludeManPages.set(options.excludeManPages)
+        this.stripDebug.set(options.stripDebug)
+        this.optimizeClassForName.set(options.optimizeClassForName)
         if (options.applicationJar != null) {
             this.applicationJarLocation.set(options.applicationJar!!)
         }
@@ -113,6 +117,7 @@ open class JLinkTask @Inject constructor(val options: JLinkOptions) : DefaultTas
 
     @TaskAction
     fun executeJLink() {
+        copyFromOptions(options)
         execJLink(project, applicationJarLocation.get().asFile.absolutePath)
 
         // Copy the application JAR into the jlink bin directory
@@ -188,47 +193,47 @@ private fun JLinkTask.buildCommandLine(project: Project, jar: String): List<Stri
     commandBuilder.add(javaBin.resolve("jlink").toString())
 
     commandBuilder.add("--add-modules")
-    if (modules.isEmpty()) {
+    if (!modules.isPresent) {
         // No user-defined modules, run jdeps and use the modules it finds
         commandBuilder.add(jdeps(project, jar).joinToString(separator = ","))
     } else {
         // Only use the user-specified modules
-        commandBuilder.add(modules.joinToString(separator = ","))
+        commandBuilder.add(modules.get().joinToString(separator = ","))
     }
 
-    if (modulePath.isNotEmpty()) {
+    if (modulePath.getOrElse("").isNotEmpty()) {
         commandBuilder.add("--module-path")
-        commandBuilder.add(modulePath)
+        commandBuilder.add(modulePath.get())
     }
 
-    if (bindServices) {
+    if (bindServices.getOrElse(false)) {
         commandBuilder.add("--bind-services")
     }
 
-    commandBuilder.add("--compress=${compressionLevel.ordinal}")
+    commandBuilder.add("--compress=${compressionLevel.get().ordinal}")
 
-    if (endianness != JLinkTask.Endianness.SYSTEM_DEFAULT) {
+    if (endianness.get() != JLinkTask.Endianness.SYSTEM_DEFAULT) {
         commandBuilder.add("--endian")
-        commandBuilder.add(endianness.name.toLowerCase())
+        commandBuilder.add(endianness.get().name.toLowerCase())
     }
 
-    if (ignoreSigningInformation) {
+    if (ignoreSigningInformation.getOrElse(false)) {
         commandBuilder.add("--ignore-signing-information")
     }
 
-    if (excludeHeaderFiles) {
+    if (excludeHeaderFiles.getOrElse(false)) {
         commandBuilder.add("--no-header-files")
     }
 
-    if (excludeManPages) {
+    if (excludeManPages.getOrElse(false)) {
         commandBuilder.add("--no-man-pages")
     }
 
-    if (stripDebug) {
+    if (stripDebug.getOrElse(false)) {
         commandBuilder.add("--strip-debug")
     }
 
-    if (optimizeClassForName) {
+    if (optimizeClassForName.getOrElse(false)) {
         commandBuilder.add("--class-for-name")
     }
 

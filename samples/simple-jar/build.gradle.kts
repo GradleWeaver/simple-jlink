@@ -1,7 +1,5 @@
 jlink {
-    configure {
-//        register("something") {
-//
-//        }
+    "example" {
+        useMinimalImage()
     }
 }

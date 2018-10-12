@@ -1,10 +1,22 @@
 package org.gradleweaver.plugins.jlink
 
+import org.gradleweaver.plugins.jlink.JLinkTask.CompressionLevel
+import org.gradleweaver.plugins.jlink.JLinkTask.Endianness
+import java.io.File
+
 class JLinkOptions(val name: String) {
+
+    var applicationJar: File? = null
+
+    /**
+     * The directory into which the jlink image will be generated. This option is not required; if it is not set,
+     * the jlink image will be generated in `${project.dir}/build/jlink`
+     */
+    var jlinkDir: File? = null
 
     /**
      * The modules to link. These MUST be on the module path or included in the JDK. If not set, `jdeps` will be run
-     * on the output JAR file from [shadowTask] to automatically determine the modules used.
+     * on the [applicationJar] to automatically determine the modules used.
      */
     var modules: List<String> = listOf()
 
@@ -55,41 +67,12 @@ class JLinkOptions(val name: String) {
     var optimizeClassForName = false
 
     /**
-     * Specifies the location of the generated runtime image. By default, this is `${project.dir}/build/jlink`.
+     * Configures the options to minimize the size of generated runtime images.
      */
-    var output: Any = "build/jlink/"
-
-    enum class CompressionLevel {
-        /**
-         * Do no compression on the generated image.
-         */
-        NONE,
-
-        /**
-         * Share constant string objects.
-         */
-        CONSTANT_STRING_SHARING,
-
-        /**
-         * ZIP compression on the generated image.
-         */
-        ZIP
-    }
-
-    enum class Endianness {
-        /**
-         * Use the endianness of the build system.
-         */
-        SYSTEM_DEFAULT,
-
-        /**
-         * Force little-endian byte order in the generated image.
-         */
-        LITTLE,
-
-        /**
-         * Force big-endian byte order in the generated image.
-         */
-        BIG
+    fun useMinimalImage() {
+        compressionLevel = CompressionLevel.ZIP
+        excludeHeaderFiles = true
+        excludeManPages = true
+        stripDebug = true
     }
 }

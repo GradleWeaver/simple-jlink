@@ -68,7 +68,7 @@ class JLinkPluginTest: AbstractPluginTest() {
 
             val taskName = JLinkPlugin.generateJLinkTaskName("example")
 
-            build(taskName).apply {
+            build(taskName, "--stacktrace").apply {
                 assertEquals(TaskOutcome.SUCCESS, task(":$taskName")!!.outcome)
                 // Check that the jlink image was generated and contains the jar file
                 val jlinkDir = resolve("build/jlink")

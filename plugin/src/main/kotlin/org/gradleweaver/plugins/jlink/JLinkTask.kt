@@ -3,8 +3,10 @@ package org.gradleweaver.plugins.jlink
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
@@ -19,7 +21,7 @@ import javax.inject.Inject
 open class JLinkTask @Inject constructor(val options: JLinkOptions) : DefaultTask() {
 
     private val objectFactory = project.objects
-    
+
     /**
      * The modules to link. These MUST be on the module path or included in the JDK. If not set, `jdeps` will be run
      * on the output JAR file from [shadowTask] to automatically determine the modules used.
@@ -50,7 +52,7 @@ open class JLinkTask @Inject constructor(val options: JLinkOptions) : DefaultTas
      * The signature-related files of the signed modular JARs are not copied to the runtime image.
      */
     @get:Input
-    val ignoreSigningInformation  = objectFactory.property<Boolean>()
+    val ignoreSigningInformation = objectFactory.property<Boolean>()
 
     /**
      * Specifies the module path.
@@ -62,25 +64,25 @@ open class JLinkTask @Inject constructor(val options: JLinkOptions) : DefaultTas
      * Excludes header files from the generated image.
      */
     @get:Input
-    val excludeHeaderFiles  = objectFactory.property<Boolean>()
+    val excludeHeaderFiles = objectFactory.property<Boolean>()
 
     /**
      * Excludes man pages from the generated image.
      */
     @get:Input
-    val excludeManPages  = objectFactory.property<Boolean>()
+    val excludeManPages = objectFactory.property<Boolean>()
 
     /**
      * Strips debug symbols from the generated image.
      */
     @get:Input
-    val stripDebug  = objectFactory.property<Boolean>()
+    val stripDebug = objectFactory.property<Boolean>()
 
     /**
      * Optimize `Class.forName` calls to constant class loads.
      */
     @get:Input
-    val optimizeClassForName  = objectFactory.property<Boolean>()
+    val optimizeClassForName = objectFactory.property<Boolean>()
 
     @get:InputFile
     val applicationJarLocation: RegularFileProperty = newInputFile()
@@ -97,27 +99,27 @@ open class JLinkTask @Inject constructor(val options: JLinkOptions) : DefaultTas
     }
 
     private fun copyFromOptions(options: JLinkOptions) {
-        this.modules.set(options.modules)
-        this.bindServices.set(options.bindServices)
-        this.compressionLevel.set(options.compressionLevel)
-        this.endianness.set(options.endianness)
-        this.ignoreSigningInformation.set(options.ignoreSigningInformation)
-        this.modulePath.set(options.modulePath)
-        this.excludeHeaderFiles.set(options.excludeHeaderFiles)
-        this.excludeManPages.set(options.excludeManPages)
-        this.stripDebug.set(options.stripDebug)
-        this.optimizeClassForName.set(options.optimizeClassForName)
-        if (options.applicationJar != null) {
-            this.applicationJarLocation.set(options.applicationJar!!)
-        }
-        if (options.jlinkDir != null) {
-            this.jlinkDir.set(options.jlinkDir!!)
+        with(project) {
+            modules.set(provider { options.modules })
+            bindServices.set(provider { options.bindServices })
+            compressionLevel.set(provider { options.compressionLevel })
+            endianness.set(provider { options.endianness })
+            ignoreSigningInformation.set(provider { options.ignoreSigningInformation })
+            modulePath.set(provider { options.modulePath })
+            excludeHeaderFiles.set(provider { options.excludeHeaderFiles })
+            excludeManPages.set(provider { options.excludeManPages })
+            stripDebug.set(provider { options.stripDebug })
+            optimizeClassForName.set(provider { options.optimizeClassForName })
+
+            // Some workarounds to allow the options to have the JAR file and jlink dir specified as File objects
+            // instead of Gradle Property objects
+            applicationJarLocation.set(layout.file(provider { options.applicationJar!!.relativeTo(projectDir) }))
+            jlinkDir.set(layout.buildDirectory.dir(provider { options.jlinkDir?.relativeTo(projectDir)?.path ?: "build/jlink" }))
         }
     }
 
     @TaskAction
     fun executeJLink() {
-        copyFromOptions(options)
         execJLink(project, applicationJarLocation.get().asFile.absolutePath)
 
         // Copy the application JAR into the jlink bin directory
@@ -210,9 +212,11 @@ private fun JLinkTask.buildCommandLine(project: Project, jar: String): List<Stri
         commandBuilder.add("--bind-services")
     }
 
-    commandBuilder.add("--compress=${compressionLevel.get().ordinal}")
+    if (compressionLevel.isPresent) {
+        commandBuilder.add("--compress=${compressionLevel.get().ordinal}")
+    }
 
-    if (endianness.get() != JLinkTask.Endianness.SYSTEM_DEFAULT) {
+    if (endianness.getOrElse(JLinkTask.Endianness.SYSTEM_DEFAULT) != JLinkTask.Endianness.SYSTEM_DEFAULT) {
         commandBuilder.add("--endian")
         commandBuilder.add(endianness.get().name.toLowerCase())
     }

@@ -171,7 +171,7 @@ private fun JLinkTask.buildCommandLine(project: Project, jar: String): List<Stri
     commandBuilder.add(javaBin.resolve("jlink").toString())
 
     commandBuilder.add("--add-modules")
-    if (!modules.isPresent) {
+    if (!modules.isPresent || modules.get().isEmpty()) {
         // No user-defined modules, run jdeps and use the modules it finds
         commandBuilder.add(jdeps(project, jar).joinToString(separator = ","))
     } else {

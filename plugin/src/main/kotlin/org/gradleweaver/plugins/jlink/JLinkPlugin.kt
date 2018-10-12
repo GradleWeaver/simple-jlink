@@ -35,7 +35,7 @@ open class JLinkPlugin : Plugin<Project> {
     }
 
     private fun generateTasks(options: JLinkOptions, project: Project) {
-        val jlinkTask = project.tasks.register(generateJLinkTaskName(options.name), JLinkTask::class.java).configure {
+        project.tasks.register(generateJLinkTaskName(options.name), JLinkTask::class.java).configure {
             group = JLINK_TASK_GROUP
             description = "Generates a native Java runtime image for '${options.name}'."
             copyFromOptions(options)
@@ -43,7 +43,7 @@ open class JLinkPlugin : Plugin<Project> {
         project.tasks.register(generateJLinkZipTaskName(options.name), Zip::class.java) {
             group = JLINK_TASK_GROUP
             description = "Generates a ZIP file of a native Java runtime image for '${options.name}."
-            from(jlinkTask)
+            from(project.tasks.getByName(generateJLinkTaskName(options.name)).outputs)
         }
     }
 

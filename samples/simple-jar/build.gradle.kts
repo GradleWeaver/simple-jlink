@@ -1,7 +1,4 @@
 jlink {
     configure {
-//        register("something") {
-//
-//        }
     }
 }

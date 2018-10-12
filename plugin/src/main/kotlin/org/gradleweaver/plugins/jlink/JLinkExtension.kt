@@ -1,6 +1,6 @@
 package org.gradleweaver.plugins.jlink
 
-import org.gradle.api.NamedDomainObjectCollection
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import javax.inject.Inject
 
@@ -9,7 +9,7 @@ open class JLinkExtension
 internal constructor(
         project: Project
 ) {
-    val configure: NamedDomainObjectCollection<JLinkOptions> = project.container(JLinkOptions::class.java) { name ->
+    val configure: NamedDomainObjectContainer<JLinkOptions> = project.container(JLinkOptions::class.java) { name ->
         JLinkOptions(name = name)
     }
 }

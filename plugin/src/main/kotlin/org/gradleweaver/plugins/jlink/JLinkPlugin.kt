@@ -35,14 +35,35 @@ open class JLinkPlugin : Plugin<Project> {
     }
 
     private fun generateTasks(options: JLinkOptions, project: Project) {
-        val jlinkTask = project.tasks.register(generateJLinkTaskName(options.name), JLinkTask::class.java, options).configure {
+        val jlinkTask = project.tasks.register(generateJLinkTaskName(options.name), JLinkTask::class.java).configure {
             group = JLINK_TASK_GROUP
-            description = "Generates a native Java runtime image."
+            description = "Generates a native Java runtime image for '${options.name}'."
+            copyFromOptions(options)
         }
         project.tasks.register(generateJLinkZipTaskName(options.name), Zip::class.java) {
             group = JLINK_TASK_GROUP
-            description = "Generates a ZIP file of a native Java runtime image."
+            description = "Generates a ZIP file of a native Java runtime image for '${options.name}."
             from(jlinkTask)
+        }
+    }
+
+    private fun JLinkTask.copyFromOptions(options: JLinkOptions) {
+        with(project) {
+            modules.set(provider { options.modules })
+            bindServices.set(provider { options.bindServices })
+            compressionLevel.set(provider { options.compressionLevel })
+            endianness.set(provider { options.endianness })
+            ignoreSigningInformation.set(provider { options.ignoreSigningInformation })
+            modulePath.set(provider { options.modulePath })
+            excludeHeaderFiles.set(provider { options.excludeHeaderFiles })
+            excludeManPages.set(provider { options.excludeManPages })
+            stripDebug.set(provider { options.stripDebug })
+            optimizeClassForName.set(provider { options.optimizeClassForName })
+
+            // Some workarounds to allow the options to have the JAR file and jlink dir specified as File objects
+            // instead of Gradle Property objects
+            applicationJarLocation.set(layout.file(provider { options.applicationJar!!.relativeTo(projectDir) }))
+            jlinkDir.set(layout.projectDirectory.dir(provider { options.jlinkDir?.relativeTo(projectDir)?.path ?: "build/jlink" }))
         }
     }
 

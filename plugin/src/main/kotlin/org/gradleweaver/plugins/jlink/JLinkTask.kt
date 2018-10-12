@@ -3,10 +3,8 @@ package org.gradleweaver.plugins.jlink
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
-import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
@@ -15,10 +13,9 @@ import org.gradle.internal.jvm.Jvm
 import org.gradle.kotlin.dsl.property
 import java.io.ByteArrayOutputStream
 import java.nio.charset.Charset
-import javax.inject.Inject
 
 // Note: must be open so Gradle can create a proxy subclass
-open class JLinkTask @Inject constructor(val options: JLinkOptions) : DefaultTask() {
+open class JLinkTask : DefaultTask() {
 
     private val objectFactory = project.objects
 
@@ -94,28 +91,7 @@ open class JLinkTask @Inject constructor(val options: JLinkOptions) : DefaultTas
     val jlinkDir: DirectoryProperty = newOutputDirectory()
 
     init {
-        copyFromOptions(options)
         jlinkDir.set(project.buildDir.resolve("jlink"))
-    }
-
-    private fun copyFromOptions(options: JLinkOptions) {
-        with(project) {
-            modules.set(provider { options.modules })
-            bindServices.set(provider { options.bindServices })
-            compressionLevel.set(provider { options.compressionLevel })
-            endianness.set(provider { options.endianness })
-            ignoreSigningInformation.set(provider { options.ignoreSigningInformation })
-            modulePath.set(provider { options.modulePath })
-            excludeHeaderFiles.set(provider { options.excludeHeaderFiles })
-            excludeManPages.set(provider { options.excludeManPages })
-            stripDebug.set(provider { options.stripDebug })
-            optimizeClassForName.set(provider { options.optimizeClassForName })
-
-            // Some workarounds to allow the options to have the JAR file and jlink dir specified as File objects
-            // instead of Gradle Property objects
-            applicationJarLocation.set(layout.file(provider { options.applicationJar!!.relativeTo(projectDir) }))
-            jlinkDir.set(layout.buildDirectory.dir(provider { options.jlinkDir?.relativeTo(projectDir)?.path ?: "build/jlink" }))
-        }
     }
 
     @TaskAction

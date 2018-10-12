@@ -6,6 +6,10 @@ import java.io.File
 
 class JLinkOptions(val name: String) {
 
+    /**
+     * The application JAR. This will be copied into the generated jlink image's `bin` directory, next to the
+     * `java` executable.
+     */
     var applicationJar: File? = null
 
     /**

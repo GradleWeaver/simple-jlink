@@ -29,11 +29,8 @@ open class JLinkPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val extension = project.extensions.create(EXTENSION_NAME, JLinkExtension::class, project)
 
-        // UGLY UGLY UGLY
-        project.afterEvaluate {
-            extension.configure.forEach { options ->
-                generateTasks(options, project)
-            }
+        extension.configure.all {
+            generateTasks(this, project)
         }
     }
 

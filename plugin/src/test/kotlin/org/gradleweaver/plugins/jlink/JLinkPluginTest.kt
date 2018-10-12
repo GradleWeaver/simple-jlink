@@ -2,9 +2,11 @@ package org.gradleweaver.plugins.jlink
 
 import org.gradle.api.NamedDomainObjectCollection
 import org.gradle.testkit.runner.TaskOutcome
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.function.Executable
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 
 class JLinkPluginTest: AbstractPluginTest() {
     @Test
@@ -62,8 +64,10 @@ class JLinkPluginTest: AbstractPluginTest() {
 
             resolve("test.jar").createNewFile()
 
-            build("jlinkGenerateExample").apply {
-                assertEquals(TaskOutcome.SUCCESS, task(":jlinkGenerateExample")!!.outcome)
+            val taskName = JLinkPlugin.generateJLinkTaskName("example")
+
+            build(taskName).apply {
+                assertEquals(TaskOutcome.SUCCESS, task(":$taskName")!!.outcome)
                 // Check that the jlink image was generated and contains the jar file
                 val jlinkDir = resolve("build/jlink")
                 assertTrue(jlinkDir.exists(), "jlink directory was not created")
@@ -77,10 +81,24 @@ class JLinkPluginTest: AbstractPluginTest() {
 
             // No changes were made to the jlink configuration or its input files
             // Make sure the task doesn't run unnecessarily
-            build ("jlinkGenerateExample").apply {
-                assertEquals(TaskOutcome.UP_TO_DATE, task(":jlinkGenerateExample")!!.outcome,
+            build (taskName).apply {
+                assertEquals(TaskOutcome.UP_TO_DATE, task(":$taskName")!!.outcome,
                         "The custom jlink task was not updated and should not have run")
             }
         }
     }
+
+    @ParameterizedTest
+    @CsvSource(
+            "simple,jlinkGenerateSimple,jlinkZipSimple",
+            "Capitalized,jlinkGenerateCapitalized,jlinkZipCapitalized",
+            "spaces in the name,jlinkGenerateSpacesInTheName,jlinkZipSpacesInTheName"
+    )
+    fun `generated task names are correct`(configName: String, expectedJLinkTaskName: String, expectedJLinkZipTaskName: String) {
+        assertAll(configName,
+                Executable { assertEquals(expectedJLinkTaskName, JLinkPlugin.generateJLinkTaskName(configName)) },
+                Executable { assertEquals(expectedJLinkZipTaskName, JLinkPlugin.generateJLinkZipTaskName(configName)) }
+        )
+    }
+
 }

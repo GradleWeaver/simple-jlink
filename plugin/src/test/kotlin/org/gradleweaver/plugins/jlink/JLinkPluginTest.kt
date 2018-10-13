@@ -104,7 +104,7 @@ class JLinkPluginTest: AbstractPluginTest() {
     fun `generated task names are correct`(configName: String, expectedJLinkTaskName: String, expectedJLinkZipTaskName: String) {
         assertAll(configName,
                 Executable { assertEquals(expectedJLinkTaskName, JLinkPlugin.generateJLinkTaskName(configName)) },
-                Executable { assertEquals(expectedJLinkZipTaskName, JLinkPlugin.generateJLinkZipTaskName(configName)) }
+                Executable { assertEquals(expectedJLinkZipTaskName, JLinkPlugin.generateJLinkArchiveTaskName(configName)) }
         )
     }
 

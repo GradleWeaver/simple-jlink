@@ -4,7 +4,6 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.ListProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
@@ -12,19 +11,15 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.jvm.Jvm
 import org.gradle.kotlin.dsl.property
 import java.io.ByteArrayOutputStream
+import java.lang.module.ModuleFinder
+import java.lang.module.ModuleReference
 import java.nio.charset.Charset
+import java.nio.file.Paths
 
 // Note: must be open so Gradle can create a proxy subclass
 open class JLinkTask : DefaultTask() {
 
     private val objectFactory = project.objects
-
-    /**
-     * The modules to link. These MUST be on the module path or included in the JDK. If not set, `jdeps` will be run
-     * on the output JAR file from [shadowTask] to automatically determine the modules used.
-     */
-    @get:Input
-    val modules: ListProperty<String> = objectFactory.listProperty(String::class.java)
 
     /**
      * Link service provider modules and their dependencies.
@@ -50,12 +45,6 @@ open class JLinkTask : DefaultTask() {
      */
     @get:Input
     val ignoreSigningInformation = objectFactory.property<Boolean>()
-
-    /**
-     * Specifies the module path.
-     */
-    @get:Input
-    val modulePath = objectFactory.property<String>()
 
     /**
      * Excludes header files from the generated image.
@@ -96,15 +85,17 @@ open class JLinkTask : DefaultTask() {
 
     @TaskAction
     fun executeJLink() {
-        execJLink(project, applicationJarLocation.get().asFile.absolutePath)
+        execJLink(project)
 
-        // Copy the application JAR into the jlink bin directory
-        project.copy {
-            from(applicationJarLocation)
-            rename {
-                "${project.name.toLowerCase()}.jar"
+        // Copy the application JAR into the jlink bin directory, if specified
+        if (applicationJarLocation.isPresent) {
+            project.copy {
+                from(applicationJarLocation)
+                rename {
+                    "${project.name.toLowerCase()}.jar"
+                }
+                into("${jlinkDir.get().asFile}/bin")
             }
-            into("${jlinkDir.get().asFile}/bin")
         }
     }
 
@@ -152,36 +143,41 @@ private val javaBin = Jvm.current().javaHome.resolve("bin")
  */
 fun jdeps(project: Project, jar: String): List<String> {
     return ByteArrayOutputStream().use { os ->
-        // Get the standard library modules used by Shuffleboard and its dependencies
+        // Get the standard library modules used by the project and its dependencies
         project.exec {
-            commandLine = listOf(javaBin.resolve("jdeps").toString(), "--list-deps", jar)
+            val modulePath = getDependencyModules(project).asPath()
+            val commandBuilder = mutableListOf(javaBin.resolve("jdeps").toString(), "--print-module-deps")
+            if (modulePath.isNotEmpty()) {
+                commandBuilder.add("--module-path")
+                commandBuilder.add(modulePath)
+            }
+            commandBuilder.add(jar)
+            commandLine = commandBuilder
             standardOutput = os
         }
         val out = os.toString(Charset.defaultCharset())
         out.split("\n")
-                .filter { it.startsWith("   ") }
-                .filter { !it.contains('/') }
-                .filter { it == it.toLowerCase() }
-                .map { it.substring(3) }
+                .takeWhile { it.isNotBlank() }
     }
 }
 
-private fun JLinkTask.buildCommandLine(project: Project, jar: String): List<String> {
+private fun JLinkTask.buildCommandLine(project: Project): List<String> {
+    val dependencyModules = getDependencyModules(project)
     val commandBuilder = mutableListOf<String>()
     commandBuilder.add(javaBin.resolve("jlink").toString())
-
     commandBuilder.add("--add-modules")
-    if (!modules.isPresent || modules.get().isEmpty()) {
-        // No user-defined modules, run jdeps and use the modules it finds
-        commandBuilder.add(jdeps(project, jar).joinToString(separator = ","))
-    } else {
-        // Only use the user-specified modules
-        commandBuilder.add(modules.get().joinToString(separator = ","))
-    }
+    commandBuilder.add(
+            listOf(
+                    jdeps(project, project.buildDir.resolve("classes").absolutePath).joinToString(separator = ","),
+                    dependencyModules.joinToString(separator = ",") { it.descriptor().name() }
+            ).joinToString(separator = ",")
+    )
 
-    if (modulePath.getOrElse("").isNotEmpty()) {
+    // Use the automatic module path, determined from the project dependencies
+    val files = project.configurations.getByName("runtime").toList()
+    if (files.isNotEmpty()) {
         commandBuilder.add("--module-path")
-        commandBuilder.add(modulePath.get())
+        commandBuilder.add(dependencyModules.asPath())
     }
 
     if (bindServices.getOrElse(false)) {
@@ -223,10 +219,33 @@ private fun JLinkTask.buildCommandLine(project: Project, jar: String): List<Stri
     return commandBuilder
 }
 
-internal fun JLinkTask.execJLink(project: Project, jar: String) {
+internal fun JLinkTask.execJLink(project: Project) {
     logger.debug("Deleting jlink build directory")
     project.delete(jlinkDir.get())
     project.exec {
-        commandLine = buildCommandLine(project, jar)
+        commandLine = buildCommandLine(project)
     }
+}
+
+private fun Iterable<ModuleReference>.asPath() =
+        joinToString(separator = System.getProperty("path.separator")) {
+            it.location().get().toString()
+        }
+
+/**
+ * Extracts data about all the modules required by a project's dependency libraries, including those libraries if they
+ * are modularized.
+ */
+private fun getDependencyModules(project: Project): Collection<ModuleReference> {
+    if (project.configurations.findByName("runtime") == null) {
+        return listOf()
+    }
+    val dependencyFilesList = project.configurations.getByName("runtime")
+            .map { it.absolutePath }
+            .filter { it.endsWith(".jar") || it.endsWith(".jmod") }
+            .map { it -> Paths.get(it) }
+            .toTypedArray()
+    val allModuleReferences = ModuleFinder.of(*dependencyFilesList).findAll()
+    return allModuleReferences
+            .filter { !it.descriptor().isAutomatic } // Can't add automatic modules to a jlink image
 }

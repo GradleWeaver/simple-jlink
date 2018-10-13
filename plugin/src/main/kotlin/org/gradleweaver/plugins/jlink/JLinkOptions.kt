@@ -19,12 +19,6 @@ class JLinkOptions(val name: String) {
     var jlinkDir: File? = null
 
     /**
-     * The modules to link. These MUST be on the module path or included in the JDK. If not set, `jdeps` will be run
-     * on the [applicationJar] to automatically determine the modules used.
-     */
-    var modules: List<String> = listOf()
-
-    /**
      * Link service provider modules and their dependencies.
      */
     var bindServices = false
@@ -44,11 +38,6 @@ class JLinkOptions(val name: String) {
      * The signature-related files of the signed modular JARs are not copied to the runtime image.
      */
     var ignoreSigningInformation = false
-
-    /**
-     * Specifies the module path.
-     */
-    var modulePath = ""
 
     /**
      * Excludes header files from the generated image.

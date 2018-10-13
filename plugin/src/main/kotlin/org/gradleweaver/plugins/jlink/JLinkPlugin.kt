@@ -49,12 +49,10 @@ open class JLinkPlugin : Plugin<Project> {
 
     private fun JLinkTask.copyFromOptions(options: JLinkOptions) {
         with(project) {
-            modules.set(provider { options.modules })
             bindServices.set(provider { options.bindServices })
             compressionLevel.set(provider { options.compressionLevel })
             endianness.set(provider { options.endianness })
             ignoreSigningInformation.set(provider { options.ignoreSigningInformation })
-            modulePath.set(provider { options.modulePath })
             excludeHeaderFiles.set(provider { options.excludeHeaderFiles })
             excludeManPages.set(provider { options.excludeManPages })
             stripDebug.set(provider { options.stripDebug })

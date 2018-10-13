@@ -10,7 +10,7 @@ open class JLinkPlugin : Plugin<Project> {
         const val EXTENSION_NAME = "jlink"
         const val JLINK_TASK_GROUP = "JLink"
         const val JLINK_TASK_NAME = "jlinkGenerate"
-        const val JLINK_ZIP_TASK_NAME = "jlinkZip"
+        const val JLINK_ARCHIVE_TASK_NAME = "jlinkArchive"
     }
 
     override fun apply(project: Project) {
@@ -21,9 +21,9 @@ open class JLinkPlugin : Plugin<Project> {
             description = "Generates a native Java runtime image"
         }
 
-        val jlinkZipTask = project.tasks.register(JLINK_ZIP_TASK_NAME) {
-            group = JLINK_ZIP_TASK_NAME
-            description = "Generates a ZIP file of a native Java runtime image"
+        val jlinkArchiveTask = project.tasks.register(JLINK_ARCHIVE_TASK_NAME) {
+            group = JLINK_ARCHIVE_TASK_NAME
+            description = "Generates a Archive file of a native Java runtime image"
         }
 
     }

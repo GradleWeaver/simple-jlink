@@ -23,6 +23,13 @@ abstract class AbstractPluginTest {
     val projectRoot: File
         get() = tempDir.toFile().resolve("plugin-test").apply { mkdirs() }
 
+    protected fun pluginsBlock() =
+        """
+        plugins {
+            id("org.gradleweaver.plugins.simple-jlink")
+        }
+        """.trimIndent()
+
     protected fun buildscriptBlockWithUnderTestPlugin() =
         """
         buildscript {
@@ -61,6 +68,7 @@ abstract class AbstractPluginTest {
             GradleRunner.create()
                     .withProjectDir(projectRoot)
                     .withArguments(arguments.toList())
+                    .withPluginClasspath()
 
     private
     val testRepositoryPath

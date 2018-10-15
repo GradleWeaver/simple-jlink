@@ -2,23 +2,20 @@ package org.gradleweaver.plugins.jlink
 
 import org.gradle.api.NamedDomainObjectCollection
 import org.gradle.testkit.runner.TaskOutcome
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.function.Executable
+import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 
-class JLinkPluginTest: AbstractPluginTest() {
+class JLinkPluginTest : AbstractPluginTest() {
     @Test
     fun `can access the jlink extension`() {
         projectRoot.apply {
             buildKotlinFile().writeText(
                     """
-                ${buildscriptBlockWithUnderTestPlugin()}
-
-                ${pluginsBlockWithKotlinJvmPlugin()}
-
-                apply(plugin = "org.gradleweaver.plugins.simple-jlink")
+                ${pluginsBlock()}
 
                 // This extension should have been added by the accessor below.
                 jlink {
@@ -27,8 +24,6 @@ class JLinkPluginTest: AbstractPluginTest() {
                         assert(this is ${NamedDomainObjectCollection::class.qualifiedName}<*>)
                     }
                 }
-
-                ${kotlinExtensionAccessor()}
                 """.trimIndent()
             )
         }
@@ -44,11 +39,7 @@ class JLinkPluginTest: AbstractPluginTest() {
                     """
                 import org.gradleweaver.plugins.jlink.*
 
-                ${buildscriptBlockWithUnderTestPlugin()}
-
-                ${pluginsBlockWithKotlinJvmPlugin()}
-
-                apply(plugin = "org.gradleweaver.plugins.simple-jlink")
+                ${pluginsBlock()}
 
                 tasks.all {}
 
@@ -59,9 +50,7 @@ class JLinkPluginTest: AbstractPluginTest() {
                         modules = listOf("java.base") // To avoid calling jdeps on an empty file
                     }
                 }
-
-                ${kotlinExtensionAccessor()}
-                    """.trimIndent()
+                """.trimIndent()
             )
 
             resolve("test.jar").createNewFile()
@@ -88,7 +77,7 @@ class JLinkPluginTest: AbstractPluginTest() {
 
             // No changes were made to the jlink configuration or its input files
             // Make sure the task doesn't run unnecessarily
-            build (taskName).apply {
+            build(taskName).apply {
                 assertEquals(TaskOutcome.UP_TO_DATE, task(":$taskName")!!.outcome,
                         "The custom jlink task was not updated and should not have run")
             }
@@ -103,8 +92,8 @@ class JLinkPluginTest: AbstractPluginTest() {
     )
     fun `generated task names are correct`(configName: String, expectedJLinkTaskName: String, expectedJLinkZipTaskName: String) {
         assertAll(configName,
-                Executable { assertEquals(expectedJLinkTaskName, JLinkPlugin.generateJLinkTaskName(configName)) },
-                Executable { assertEquals(expectedJLinkZipTaskName, JLinkPlugin.generateJLinkArchiveTaskName(configName)) }
+                { assertEquals(expectedJLinkTaskName, JLinkPlugin.generateJLinkTaskName(configName)) },
+                { assertEquals(expectedJLinkZipTaskName, JLinkPlugin.generateJLinkArchiveTaskName(configName)) }
         )
     }
 

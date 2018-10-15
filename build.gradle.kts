@@ -21,6 +21,8 @@ project(":samples") {
 
 tasks.named<Task>("check") {
     dependsOn(gradle.includedBuild("simple-jlink").task(":check"))
+    dependsOn(findProject(":samples:javafx-app")!!.tasks.getByName("jlinkGenerateReleaseImage"))
+    dependsOn(findProject(":samples:simple-jar")!!.tasks.getByName("jlinkGenerateReleaseImage"))
 }
 
 apply(from = "gradle/wrapper.gradle.kts")

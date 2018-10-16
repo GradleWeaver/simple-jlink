@@ -155,7 +155,7 @@ fun jdeps(project: Project, jar: String): List<String> {
             commandLine = commandBuilder
             standardOutput = os
         }
-        val out = os.toString(Charset.defaultCharset())
+        val out = os.toString(Charset.defaultCharset().name())
         out.split("\n")
                 .takeWhile { it.isNotBlank() }
     }

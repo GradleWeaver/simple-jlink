@@ -20,15 +20,27 @@ jlink {
     
     // jlink executable options. See the reference page for details
     bindServices = false
-    compressionLevel = JLinkTask.CompressionLevel.ZIP
+    compressionLevel = JLinkTask.CompressionLevel.NONE
     endianess = JLinkTask.Endianness.SYSTEM_DEFAULT
     ignoreSigningInformation = false
     excludeHeaderFiles = false
     excludeManPages = false
     stripDebug = false
     optimizeClassForName = false
+    
+    // Single method to exclude header files, man pages, and debug symbols
+    // Also sets the compression level to ZIP (maximum)
+    useMinimalImage()
   }
 }
 ```
 
 See the [samples](samples) directory for more examples on the jlink plugin in action.
+
+## Unavailable Options
+
+`--disable-plugin pluginname`  
+`--launcher`  
+`--limit-modules`  
+`--save-opts`  
+`@filename`

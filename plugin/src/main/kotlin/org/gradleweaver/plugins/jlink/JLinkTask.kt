@@ -138,7 +138,9 @@ open class JLinkTask : DefaultTask() {
     }
 }
 
-private val javaBin = Jvm.current().javaHome.resolve("bin")
+private val javaBin by lazy {
+    Jvm.current().javaHome.resolve("bin")
+}
 
 /**
  * Runs `jdeps` on the specified JAR file to determine its module dependencies.

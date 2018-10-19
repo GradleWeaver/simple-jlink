@@ -102,40 +102,6 @@ open class JLinkTask : DefaultTask() {
             }
         }
     }
-
-    enum class CompressionLevel {
-        /**
-         * Do no compression on the generated image.
-         */
-        NONE,
-
-        /**
-         * Share constant string objects.
-         */
-        CONSTANT_STRING_SHARING,
-
-        /**
-         * ZIP compression on the generated image.
-         */
-        ZIP
-    }
-
-    enum class Endianness {
-        /**
-         * Use the endianness of the build system.
-         */
-        SYSTEM_DEFAULT,
-
-        /**
-         * Force little-endian byte order in the generated image.
-         */
-        LITTLE,
-
-        /**
-         * Force big-endian byte order in the generated image.
-         */
-        BIG
-    }
 }
 
 private val javaBin by lazy {
@@ -195,7 +161,7 @@ private fun JLinkTask.buildCommandLine(project: Project): List<String> {
         commandBuilder.add("--compress=${compressionLevel.get().ordinal}")
     }
 
-    if (endianness.getOrElse(JLinkTask.Endianness.SYSTEM_DEFAULT) != JLinkTask.Endianness.SYSTEM_DEFAULT) {
+    if (endianness.getOrElse(Endianness.SYSTEM_DEFAULT) != Endianness.SYSTEM_DEFAULT) {
         commandBuilder.add("--endian")
         commandBuilder.add(endianness.get().name.toLowerCase())
     }

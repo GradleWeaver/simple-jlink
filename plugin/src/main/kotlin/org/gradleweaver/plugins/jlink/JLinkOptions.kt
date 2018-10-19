@@ -1,7 +1,5 @@
 package org.gradleweaver.plugins.jlink
 
-import org.gradleweaver.plugins.jlink.JLinkTask.CompressionLevel
-import org.gradleweaver.plugins.jlink.JLinkTask.Endianness
 import java.io.File
 
 class JLinkOptions(val name: String) {

@@ -70,6 +70,7 @@ open class JLinkPlugin : Plugin<Project> {
             excludeManPages.set(provider { options.excludeManPages })
             stripDebug.set(provider { options.stripDebug })
             optimizeClassForName.set(provider { options.optimizeClassForName })
+            extraModules.set(provider { options.extraModules })
 
             // Some workarounds to allow the options to have the JAR file and jlink dir specified as File objects
             // instead of Gradle Property objects

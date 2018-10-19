@@ -19,6 +19,13 @@ class JLinkOptions(val name: String) {
     var jlinkDir: File? = null
 
     /**
+     * Extra modules to add to the image that cannot be automatically detected by jdeps, such as those referenced
+     * reflectively (e.g. using `Class.forName`). Typically, only modules from the JDK need to be explicitly specified;
+     * modules from library dependencies are always added regardless of what jdeps detects.
+     */
+    var extraModules: Collection<String> = listOf()
+
+    /**
      * Link service provider modules and their dependencies.
      */
     var bindServices = false

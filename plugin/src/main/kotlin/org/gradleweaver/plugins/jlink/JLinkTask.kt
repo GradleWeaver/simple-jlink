@@ -9,6 +9,7 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.jvm.Jvm
+import org.gradle.kotlin.dsl.listProperty
 import org.gradle.kotlin.dsl.property
 import java.io.ByteArrayOutputStream
 import java.lang.module.ModuleFinder
@@ -69,6 +70,9 @@ open class JLinkTask : DefaultTask() {
      */
     @get:Input
     val optimizeClassForName = objectFactory.property<Boolean>()
+
+    @get:Input
+    val extraModules = objectFactory.listProperty<String>()
 
     @get:InputFile
     val applicationJarLocation: RegularFileProperty = newInputFile()
@@ -169,7 +173,8 @@ private fun JLinkTask.buildCommandLine(project: Project): List<String> {
     commandBuilder.add(
             listOf(
                     jdeps(project, project.buildDir.resolve("classes").absolutePath).joinToString(separator = ","),
-                    dependencyModules.joinToString(separator = ",") { it.descriptor().name() }
+                    dependencyModules.joinToString(separator = ",") { it.descriptor().name() },
+                    extraModules.getOrElse(listOf()).joinToString(separator = ",")
             ).joinToString(separator = ",")
     )
 

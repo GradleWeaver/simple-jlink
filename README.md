@@ -4,7 +4,9 @@ A simple Gradle plugin for generating native Java runtime images with the jlink 
 Your applications can be modular, unmodular, and use modular or unomdular libraries. The
 plugin will automatically determine which modules to include in the generated image.
 
-See [the jlink Reference Page](https://docs.oracle.com/javase/9/tools/jlink.htm) for details on the
+Note: this plugin must be run on JDK 10 or higher. JDK 9 is not supported.
+
+See [the jlink Reference Page](https://docs.oracle.com/javase/10/tools/jlink.htm) for details on the
 jlink tool and its options, most of which are exposed to plugin users.
 
 ```kotlin
@@ -27,6 +29,9 @@ jlink {
     excludeManPages = false
     stripDebug = false
     optimizeClassForName = false
+    
+    // Extra modules to link that are not discovered by jdeps
+    extraModules = listOf("module1", "module2", ...)
     
     // Single method to exclude header files, man pages, and debug symbols
     // Also sets the compression level to ZIP (maximum)

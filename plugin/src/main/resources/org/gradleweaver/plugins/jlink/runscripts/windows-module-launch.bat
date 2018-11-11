@@ -1,0 +1,4 @@
+@echo off
+set JLINK_VM_OPTIONS={{JLINK_VM_OPTIONS}}
+set DIR=%~dp0
+%DIR%\java -jar %JLINK_VM_OPTIONS% -m {{MODULE_NAME}}/{{MAIN_CLASS_NAME}} $@

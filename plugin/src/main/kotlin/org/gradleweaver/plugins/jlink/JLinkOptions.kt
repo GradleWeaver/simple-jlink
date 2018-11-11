@@ -1,5 +1,6 @@
 package org.gradleweaver.plugins.jlink
 
+import org.gradle.api.Action
 import java.io.File
 
 class JLinkOptions(val name: String) {
@@ -65,6 +66,11 @@ class JLinkOptions(val name: String) {
     var optimizeClassForName = false
 
     /**
+     * Options for the application launch script.
+     */
+    var launcherOptions = JLinkLauncherOptions()
+
+    /**
      * Configures the options to minimize the size of generated runtime images.
      */
     fun useMinimalImage() {
@@ -73,4 +79,12 @@ class JLinkOptions(val name: String) {
         excludeManPages = true
         stripDebug = true
     }
+
+    /**
+     * Configures the application launch script.
+     */
+    fun launcher(launcherConfigurationAction: Action<in JLinkLauncherOptions>) {
+        launcherConfigurationAction.execute(launcherOptions)
+    }
+
 }

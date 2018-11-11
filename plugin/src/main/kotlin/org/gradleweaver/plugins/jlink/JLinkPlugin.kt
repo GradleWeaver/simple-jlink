@@ -15,6 +15,7 @@ open class JLinkPlugin : Plugin<Project> {
         const val JLINK_TASK_GROUP = "JLink"
         const val JLINK_TASK_NAME = "jlinkGenerate"
         const val JLINK_ARCHIVE_TASK_NAME = "jlinkArchive"
+        const val JLINK_LAUNCHER_TASK_NAME = "jlinkLauncher"
 
         private fun capitalizeAndJoinWords(words: String): String {
             return words.split(' ').joinToString(separator = "") { it.capitalize() }
@@ -27,6 +28,11 @@ open class JLinkPlugin : Plugin<Project> {
         fun generateJLinkArchiveTaskName(configurationName: String): String {
             return "$JLINK_ARCHIVE_TASK_NAME${capitalizeAndJoinWords(configurationName)}"
         }
+
+        fun generateJLinkLauncherTaskName(configurationName: String): String {
+            return "$JLINK_LAUNCHER_TASK_NAME${capitalizeAndJoinWords(configurationName)}"
+        }
+
     }
 
     override fun apply(project: Project) {
@@ -38,22 +44,31 @@ open class JLinkPlugin : Plugin<Project> {
     }
 
     private fun generateTasks(options: JLinkOptions, project: Project) {
-        project.tasks.register(generateJLinkTaskName(options.name), JLinkTask::class.java).configure {
+        val jlinkTaskName = generateJLinkTaskName(options.name)
+        val launcherTaskName = generateJLinkLauncherTaskName(options.name)
+        val archiveTaskName = generateJLinkArchiveTaskName(options.name)
+        project.tasks.register(jlinkTaskName, JLinkTask::class.java).configure {
             group = JLINK_TASK_GROUP
             description = "Generates a native Java runtime image for '${options.name}'."
             copyFromOptions(options)
         }
+        project.tasks.register(launcherTaskName, JLinkLauncherTask::class.java) {
+            group = JLINK_TASK_GROUP
+            description = "Generates a native launcher script for '${options.name}'."
+            dependsOn(jlinkTaskName)
+            copyFromOptions(options)
+        }
         if (OperatingSystem.current().isWindows) {
-            project.tasks.register(generateJLinkArchiveTaskName(options.name), Zip::class.java) {
+            project.tasks.register(archiveTaskName, Zip::class.java) {
                 group = JLINK_TASK_GROUP
-                description = "Generates a .zip archive file of a native Java runtime image for '${options.name}."
-                from(project.tasks.getByName(generateJLinkTaskName(options.name)).outputs)
+                description = "Generates a .zip archive file of a native Java runtime image for '${options.name}'."
+                from(project.tasks.getByName(jlinkTaskName).outputs)
             }
         } else if (OperatingSystem.current().isUnix) {
-            project.tasks.register(generateJLinkArchiveTaskName(options.name), Tar::class.java) {
+            project.tasks.register(archiveTaskName, Tar::class.java) {
                 group = JLINK_TASK_GROUP
-                description = "Generates a .tar.gz archive file of a native Java runtime image for '${options.name}."
-                from(project.tasks.getByName(generateJLinkTaskName(options.name)).outputs)
+                description = "Generates a .tar.gz archive file of a native Java runtime image for '${options.name}'."
+                from(project.tasks.getByName(jlinkTaskName).outputs)
                 compression = Compression.GZIP
                 extension = "tar.gz"
             }
@@ -74,8 +89,20 @@ open class JLinkPlugin : Plugin<Project> {
 
             // Some workarounds to allow the options to have the JAR file and jlink dir specified as File objects
             // instead of Gradle Property objects
-            applicationJarLocation.set(layout.file(provider { options.applicationJar!!.relativeTo(projectDir) }))
-            jlinkDir.set(layout.projectDirectory.dir(provider { options.jlinkDir?.relativeTo(projectDir)?.path ?: "build/jlink" }))
+            applicationJarLocation.set(layout.file(provider { options.applicationJar?.relativeTo(projectDir) }))
+            jlinkDir.set(layout.projectDirectory.dir(provider { options.jlinkDir?.relativeTo(projectDir)?.path }))
+        }
+    }
+
+    private fun JLinkLauncherTask.copyFromOptions(options: JLinkOptions) {
+        with(project) {
+            vmOptions.set(provider { options.launcherOptions.vmOptions })
+            launcherName.set(provider { options.launcherOptions.launcherName })
+            moduleName.set(provider { options.launcherOptions.applicationModuleName })
+            mainClassName.set(provider { options.launcherOptions.mainClassName })
+
+            applicationJarLocation.set(layout.file(provider { options.applicationJar?.relativeTo(projectDir) }))
+            jlinkDir.set(layout.projectDirectory.dir(provider { options.jlinkDir?.relativeTo(projectDir)?.path }))
         }
     }
 

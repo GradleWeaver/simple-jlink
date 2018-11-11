@@ -4,14 +4,12 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 import org.gradle.internal.jvm.Jvm
 import org.gradle.kotlin.dsl.listProperty
 import org.gradle.kotlin.dsl.property
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.lang.module.ModuleFinder
 import java.lang.module.ModuleReference
 import java.nio.charset.Charset
@@ -81,11 +79,8 @@ open class JLinkTask : DefaultTask() {
      * The directory in which the jlink image should be build. By default, this is is `${project.buildDir}/jlink`.
      */
     @get:OutputDirectory
+    @get:Optional
     val jlinkDir: DirectoryProperty = newOutputDirectory()
-
-    init {
-        jlinkDir.set(project.buildDir.resolve("jlink"))
-    }
 
     @TaskAction
     fun executeJLink() {
@@ -98,10 +93,82 @@ open class JLinkTask : DefaultTask() {
                 rename {
                     "${project.name.toLowerCase()}.jar"
                 }
-                into("${jlinkDir.get().asFile}/bin")
+                into("${getJlinkDirOrDefault()}/bin")
             }
         }
     }
+
+    private fun getJlinkDirOrDefault(): File {
+        return jlinkDir.asFile.getOrElse(project.buildDir.resolve("jlink"))
+    }
+
+    private fun buildCommandLine(project: Project): List<String> {
+        val dependencyModules = getDependencyModules(project)
+        val commandBuilder = mutableListOf<String>()
+        commandBuilder.add(javaBin.resolve("jlink").toString())
+        commandBuilder.add("--add-modules")
+        commandBuilder.add(
+                listOf(
+                        jdeps(project, project.buildDir.resolve("classes").absolutePath).joinToString(separator = ","),
+                        dependencyModules.joinToString(separator = ",") { it.descriptor().name() },
+                        extraModules.getOrElse(listOf()).joinToString(separator = ",")
+                ).joinToString(separator = ",")
+        )
+
+        // Use the automatic module path, determined from the project dependencies
+        val files = project.configurations.getByName("runtime").toList()
+        if (files.isNotEmpty()) {
+            commandBuilder.add("--module-path")
+            commandBuilder.add(dependencyModules.asPath())
+        }
+
+        if (bindServices.getOrElse(false)) {
+            commandBuilder.add("--bind-services")
+        }
+
+        if (compressionLevel.isPresent) {
+            commandBuilder.add("--compress=${compressionLevel.get().ordinal}")
+        }
+
+        if (endianness.getOrElse(Endianness.SYSTEM_DEFAULT) != Endianness.SYSTEM_DEFAULT) {
+            commandBuilder.add("--endian")
+            commandBuilder.add(endianness.get().name.toLowerCase())
+        }
+
+        if (ignoreSigningInformation.getOrElse(false)) {
+            commandBuilder.add("--ignore-signing-information")
+        }
+
+        if (excludeHeaderFiles.getOrElse(false)) {
+            commandBuilder.add("--no-header-files")
+        }
+
+        if (excludeManPages.getOrElse(false)) {
+            commandBuilder.add("--no-man-pages")
+        }
+
+        if (stripDebug.getOrElse(false)) {
+            commandBuilder.add("--strip-debug")
+        }
+
+        if (optimizeClassForName.getOrElse(false)) {
+            commandBuilder.add("--class-for-name")
+        }
+
+        commandBuilder.add("--output")
+        commandBuilder.add(getJlinkDirOrDefault().absolutePath)
+
+        return commandBuilder
+    }
+
+    private fun execJLink(project: Project) {
+        logger.debug("Deleting jlink build directory")
+        project.delete(getJlinkDirOrDefault())
+        project.exec {
+            commandLine = buildCommandLine(project)
+        }
+    }
+
 }
 
 private val javaBin by lazy {
@@ -130,73 +197,6 @@ fun jdeps(project: Project, jar: String): List<String> {
         val out = os.toString(Charset.defaultCharset().name())
         out.split("\n")
                 .takeWhile { it.isNotBlank() }
-    }
-}
-
-private fun JLinkTask.buildCommandLine(project: Project): List<String> {
-    val dependencyModules = getDependencyModules(project)
-    val commandBuilder = mutableListOf<String>()
-    commandBuilder.add(javaBin.resolve("jlink").toString())
-    commandBuilder.add("--add-modules")
-    commandBuilder.add(
-            listOf(
-                    jdeps(project, project.buildDir.resolve("classes").absolutePath).joinToString(separator = ","),
-                    dependencyModules.joinToString(separator = ",") { it.descriptor().name() },
-                    extraModules.getOrElse(listOf()).joinToString(separator = ",")
-            ).joinToString(separator = ",")
-    )
-
-    // Use the automatic module path, determined from the project dependencies
-    val files = project.configurations.getByName("runtime").toList()
-    if (files.isNotEmpty()) {
-        commandBuilder.add("--module-path")
-        commandBuilder.add(dependencyModules.asPath())
-    }
-
-    if (bindServices.getOrElse(false)) {
-        commandBuilder.add("--bind-services")
-    }
-
-    if (compressionLevel.isPresent) {
-        commandBuilder.add("--compress=${compressionLevel.get().ordinal}")
-    }
-
-    if (endianness.getOrElse(Endianness.SYSTEM_DEFAULT) != Endianness.SYSTEM_DEFAULT) {
-        commandBuilder.add("--endian")
-        commandBuilder.add(endianness.get().name.toLowerCase())
-    }
-
-    if (ignoreSigningInformation.getOrElse(false)) {
-        commandBuilder.add("--ignore-signing-information")
-    }
-
-    if (excludeHeaderFiles.getOrElse(false)) {
-        commandBuilder.add("--no-header-files")
-    }
-
-    if (excludeManPages.getOrElse(false)) {
-        commandBuilder.add("--no-man-pages")
-    }
-
-    if (stripDebug.getOrElse(false)) {
-        commandBuilder.add("--strip-debug")
-    }
-
-    if (optimizeClassForName.getOrElse(false)) {
-        commandBuilder.add("--class-for-name")
-    }
-
-    commandBuilder.add("--output")
-    commandBuilder.add(jlinkDir.get().asFile.absolutePath)
-
-    return commandBuilder
-}
-
-internal fun JLinkTask.execJLink(project: Project) {
-    logger.debug("Deleting jlink build directory")
-    project.delete(jlinkDir.get())
-    project.exec {
-        commandLine = buildCommandLine(project)
     }
 }
 

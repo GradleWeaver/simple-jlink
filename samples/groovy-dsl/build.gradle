@@ -8,7 +8,7 @@ application {
 
 jlink {
     register("release image") {
-        applicationJar = tasks.withType(Jar).getByName("jar").archivePath
+        applicationJar.set(provider { tasks.withType(Jar).getByName("jar").archivePath })
         useMinimalImage()
     }
 }

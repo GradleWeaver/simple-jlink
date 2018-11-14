@@ -4,6 +4,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
 import org.gradle.internal.jvm.Jvm
 import org.gradle.internal.os.OperatingSystem
@@ -116,21 +117,21 @@ open class JLinkTask : DefaultTask() {
         }
 
         val os = OperatingSystem.current()
-        val vmOpts = launcherOptions.vmOptions.joinToString(separator = " ")
+        val vmOpts = launcherOptions.getVmOptions().joinToString(separator = " ")
 
         val scriptText = if (applicationJarLocation.isPresent) {
             launcherGenerator.generateJarScript(os, vmOpts, applicationJarLocation.get().asFile.name)
         } else {
-            if (launcherOptions.applicationModuleName == null) {
+            if (launcherOptions.applicationModuleName.isNotPresent()) {
                 throw IllegalStateException("Application module must be specified")
             }
-            if (launcherOptions.mainClassName == null) {
+            if (launcherOptions.mainClassName.isNotPresent()) {
                 throw IllegalStateException("Application main class must be specified")
             }
-            launcherGenerator.generateModuleLaunchScript(os, vmOpts, launcherOptions.applicationModuleName!!, launcherOptions.mainClassName!!)
+            launcherGenerator.generateModuleLaunchScript(os, vmOpts, launcherOptions.getApplicationModuleName(), launcherOptions.getMainClassName())
         }
 
-        launcherGenerator.generateScriptFile(os, scriptText, getJlinkTargetDir().resolve("bin"), launcherOptions.launcherName ?: project.name)
+        launcherGenerator.generateScriptFile(os, scriptText, getJlinkTargetDir().resolve("bin"), launcherOptions.getLauncherName())
     }
 
     private fun getJlinkTargetDir(): File {

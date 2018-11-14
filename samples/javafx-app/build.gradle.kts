@@ -40,11 +40,11 @@ val jarTask: Jar by lazy {
 jlink {
     "release image" {
         useMinimalImage()
-        applicationJar = jarTask.archivePath
+        applicationJar.set(provider { jarTask.archivePath })
         launcher {
             setVmOptions(application.applicationDefaultJvmArgs)
             vmOptions("-Xms512M -Xmx2G")
-            launcherName = "SampleJavaFxApp"
+            launcherName.set("SampleJavaFxApp")
         }
     }
 }

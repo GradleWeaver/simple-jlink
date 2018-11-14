@@ -11,7 +11,7 @@ internal constructor(
         project: Project
 ) {
     val configure: NamedDomainObjectContainer<JLinkOptions> = project.container(JLinkOptions::class.java) { name ->
-        JLinkOptions(name = name)
+        JLinkOptions(project = project, name = name)
     }
 
     /**

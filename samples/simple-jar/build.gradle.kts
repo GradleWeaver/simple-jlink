@@ -7,8 +7,8 @@ plugins {
 
 jlink {
     "release image" {
+        applicationJar.set(provider { tasks.getByName<Jar>("jar").archivePath })
         useMinimalImage()
-        applicationJar = tasks.getByName<Jar>("jar").archivePath
     }
 }
 

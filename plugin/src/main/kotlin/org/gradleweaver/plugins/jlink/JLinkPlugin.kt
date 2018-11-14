@@ -64,6 +64,7 @@ open class JLinkPlugin : Plugin<Project> {
 
     private fun JLinkTask.copyFromOptions(options: JLinkOptions) {
         with(project) {
+            imageName.set(provider { options.name })
             bindServices.set(provider { options.bindServices })
             compressionLevel.set(provider { options.compressionLevel })
             endianness.set(provider { options.endianness })
@@ -73,7 +74,7 @@ open class JLinkPlugin : Plugin<Project> {
             stripDebug.set(provider { options.stripDebug })
             optimizeClassForName.set(provider { options.optimizeClassForName })
             extraModules.set(provider { options.extraModules })
-            launcherOptions.set(provider { options.launcherOptions})
+            launcherOptions.set(provider { options.launcherOptions })
 
             // Some workarounds to allow the options to have the JAR file and jlink dir specified as File objects
             // instead of Gradle Property objects

@@ -24,6 +24,12 @@ open class JLinkTask : DefaultTask() {
     private val launcherGenerator = LauncherGenerator()
 
     /**
+     * The name of the generated image.
+     */
+    @get:Input
+    val imageName = objectFactory.property<String>()
+
+    /**
      * Link service provider modules and their dependencies.
      */
     @get:Input
@@ -86,13 +92,6 @@ open class JLinkTask : DefaultTask() {
     @get:InputFile
     val applicationJarLocation: RegularFileProperty = newInputFile()
 
-    /**
-     * The directory in which the jlink image should be build. By default, this is is `${project.buildDir}/jlink`.
-     */
-    @get:OutputDirectory
-    @get:Optional
-    val jlinkDir: DirectoryProperty = newOutputDirectory()
-
     @TaskAction
     fun executeJLink() {
         execJLink(project)
@@ -104,7 +103,7 @@ open class JLinkTask : DefaultTask() {
                 rename {
                     "${project.name.toLowerCase()}.jar"
                 }
-                into("${getJlinkDirOrDefault()}/bin")
+                into("${getJlinkTargetDir()}/bin")
             }
         }
     }
@@ -131,11 +130,11 @@ open class JLinkTask : DefaultTask() {
             launcherGenerator.generateModuleLaunchScript(os, vmOpts, launcherOptions.applicationModuleName!!, launcherOptions.mainClassName!!)
         }
 
-        launcherGenerator.generateScriptFile(os, scriptText, getJlinkDirOrDefault().resolve("bin"), launcherOptions.launcherName ?: project.name)
+        launcherGenerator.generateScriptFile(os, scriptText, getJlinkTargetDir().resolve("bin"), launcherOptions.launcherName ?: project.name)
     }
 
-    private fun getJlinkDirOrDefault(): File {
-        return jlinkDir.asFile.getOrElse(project.buildDir.resolve("jlink"))
+    private fun getJlinkTargetDir(): File {
+        return project.buildDir.resolve("jlink").resolve(imageName.get())
     }
 
     private fun buildCommandLine(project: Project): List<String> {
@@ -193,14 +192,14 @@ open class JLinkTask : DefaultTask() {
         }
 
         commandBuilder.add("--output")
-        commandBuilder.add(getJlinkDirOrDefault().absolutePath)
+        commandBuilder.add(getJlinkTargetDir().absolutePath)
 
         return commandBuilder
     }
 
     private fun execJLink(project: Project) {
         logger.debug("Deleting jlink build directory")
-        project.delete(getJlinkDirOrDefault())
+        project.delete(getJlinkTargetDir())
         project.exec {
             commandLine = buildCommandLine(project)
         }

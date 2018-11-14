@@ -1,4 +1,4 @@
 #!/bin/sh
 JLINK_VM_OPTIONS="{{JLINK_VM_OPTIONS}}"
-DIR=`dirname $0`
-$DIR/java $JLINK_VM_OPTIONS -jar $DIR/{{JAR_NAME}} $@
+DIR=`dirname "$0"`
+"$DIR/java" $JLINK_VM_OPTIONS -jar "$DIR/{{JAR_NAME}}" $@

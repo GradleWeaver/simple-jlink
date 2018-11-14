@@ -1,8 +1,6 @@
 package org.gradleweaver.plugins.jlink
 
-import java.io.Serializable
-
-class JLinkLauncherOptions : Serializable {
+class JLinkLauncherOptions {
 
     /**
      * Runtime options for the JVM.

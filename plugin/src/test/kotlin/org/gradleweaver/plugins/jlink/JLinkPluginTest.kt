@@ -33,14 +33,14 @@ class JLinkPluginTest : AbstractPluginTest() {
 
     @ParameterizedTest
     @CsvSource(
-            "simple,jlinkGenerateSimple,jlinkArchiveSimple",
-            "Capitalized,jlinkGenerateCapitalized,jlinkArchiveCapitalized",
-            "spaces in the name,jlinkGenerateSpacesInTheName,jlinkArchiveSpacesInTheName"
+            "simple,jlinkGenerateSimple,jlinkArchiveZipSimple",
+            "Capitalized,jlinkGenerateCapitalized,jlinkArchiveZipCapitalized",
+            "spaces in the name,jlinkGenerateSpacesInTheName,jlinkArchiveZipSpacesInTheName"
     )
     fun `generated task names are correct`(configName: String, expectedJLinkTaskName: String, expectedJLinkZipTaskName: String) {
         assertAll(configName,
                 { assertEquals(expectedJLinkTaskName, JLinkPlugin.generateJLinkTaskName(configName)) },
-                { assertEquals(expectedJLinkZipTaskName, JLinkPlugin.generateJLinkArchiveTaskName(configName)) }
+                { assertEquals(expectedJLinkZipTaskName, JLinkPlugin.generateJLinkArchiveTaskName("Zip", configName)) }
         )
     }
 

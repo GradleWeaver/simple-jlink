@@ -5,7 +5,6 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.bundling.Compression
 import org.gradle.api.tasks.bundling.Tar
 import org.gradle.api.tasks.bundling.Zip
-import org.gradle.internal.os.OperatingSystem
 import org.gradle.kotlin.dsl.create
 
 open class JLinkPlugin : Plugin<Project> {
@@ -24,8 +23,8 @@ open class JLinkPlugin : Plugin<Project> {
             return "$JLINK_TASK_NAME${capitalizeAndJoinWords(configurationName)}"
         }
 
-        fun generateJLinkArchiveTaskName(configurationName: String): String {
-            return "$JLINK_ARCHIVE_TASK_NAME${capitalizeAndJoinWords(configurationName)}"
+        fun generateJLinkArchiveTaskName(type: String, configurationName: String): String {
+            return "$JLINK_ARCHIVE_TASK_NAME$type${capitalizeAndJoinWords(configurationName)}"
         }
     }
 
@@ -39,26 +38,22 @@ open class JLinkPlugin : Plugin<Project> {
 
     private fun generateTasks(options: JLinkOptions, project: Project) {
         val jlinkTaskName = generateJLinkTaskName(options.name)
-        val archiveTaskName = generateJLinkArchiveTaskName(options.name)
         project.tasks.register(jlinkTaskName, JLinkTask::class.java).configure {
             group = JLINK_TASK_GROUP
             description = "Generates a native Java runtime image for '${options.name}'."
             copyFromOptions(options)
         }
-        if (OperatingSystem.current().isWindows) {
-            project.tasks.register(archiveTaskName, Zip::class.java) {
-                group = JLINK_TASK_GROUP
-                description = "Generates a .zip archive file of a native Java runtime image for '${options.name}'."
-                from(project.tasks.getByName(jlinkTaskName).outputs)
-            }
-        } else if (OperatingSystem.current().isUnix) {
-            project.tasks.register(archiveTaskName, Tar::class.java) {
-                group = JLINK_TASK_GROUP
-                description = "Generates a .tar.gz archive file of a native Java runtime image for '${options.name}'."
-                from(project.tasks.getByName(jlinkTaskName).outputs)
-                compression = Compression.GZIP
-                extension = "tar.gz"
-            }
+        project.tasks.register(generateJLinkArchiveTaskName("Zip", options.name), Zip::class.java) {
+            group = JLINK_TASK_GROUP
+            description = "Generates a .zip archive file of a native Java runtime image for '${options.name}'."
+            from(project.tasks.getByName(jlinkTaskName).outputs)
+        }
+        project.tasks.register(generateJLinkArchiveTaskName("Tar", options.name), Tar::class.java) {
+            group = JLINK_TASK_GROUP
+            description = "Generates a .tar.gz archive file of a native Java runtime image for '${options.name}'."
+            from(project.tasks.getByName(jlinkTaskName).outputs)
+            compression = Compression.GZIP
+            extension = "tar.gz"
         }
     }
 

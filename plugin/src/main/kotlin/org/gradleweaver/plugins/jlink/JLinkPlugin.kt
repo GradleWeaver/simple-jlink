@@ -15,7 +15,6 @@ open class JLinkPlugin : Plugin<Project> {
         const val JLINK_TASK_GROUP = "JLink"
         const val JLINK_TASK_NAME = "jlinkGenerate"
         const val JLINK_ARCHIVE_TASK_NAME = "jlinkArchive"
-        const val JLINK_LAUNCHER_TASK_NAME = "jlinkLauncher"
 
         private fun capitalizeAndJoinWords(words: String): String {
             return words.split(' ').joinToString(separator = "") { it.capitalize() }
@@ -28,11 +27,6 @@ open class JLinkPlugin : Plugin<Project> {
         fun generateJLinkArchiveTaskName(configurationName: String): String {
             return "$JLINK_ARCHIVE_TASK_NAME${capitalizeAndJoinWords(configurationName)}"
         }
-
-        fun generateJLinkLauncherTaskName(configurationName: String): String {
-            return "$JLINK_LAUNCHER_TASK_NAME${capitalizeAndJoinWords(configurationName)}"
-        }
-
     }
 
     override fun apply(project: Project) {
@@ -45,17 +39,10 @@ open class JLinkPlugin : Plugin<Project> {
 
     private fun generateTasks(options: JLinkOptions, project: Project) {
         val jlinkTaskName = generateJLinkTaskName(options.name)
-        val launcherTaskName = generateJLinkLauncherTaskName(options.name)
         val archiveTaskName = generateJLinkArchiveTaskName(options.name)
         project.tasks.register(jlinkTaskName, JLinkTask::class.java).configure {
             group = JLINK_TASK_GROUP
             description = "Generates a native Java runtime image for '${options.name}'."
-            copyFromOptions(options)
-        }
-        project.tasks.register(launcherTaskName, JLinkLauncherTask::class.java) {
-            group = JLINK_TASK_GROUP
-            description = "Generates a native launcher script for '${options.name}'."
-            dependsOn(jlinkTaskName)
             copyFromOptions(options)
         }
         if (OperatingSystem.current().isWindows) {
@@ -86,21 +73,10 @@ open class JLinkPlugin : Plugin<Project> {
             stripDebug.set(provider { options.stripDebug })
             optimizeClassForName.set(provider { options.optimizeClassForName })
             extraModules.set(provider { options.extraModules })
+            launcherOptions.set(provider { options.launcherOptions})
 
             // Some workarounds to allow the options to have the JAR file and jlink dir specified as File objects
             // instead of Gradle Property objects
-            applicationJarLocation.set(layout.file(provider { options.applicationJar?.relativeTo(projectDir) }))
-            jlinkDir.set(layout.projectDirectory.dir(provider { options.jlinkDir?.relativeTo(projectDir)?.path }))
-        }
-    }
-
-    private fun JLinkLauncherTask.copyFromOptions(options: JLinkOptions) {
-        with(project) {
-            vmOptions.set(provider { options.launcherOptions.vmOptions })
-            launcherName.set(provider { options.launcherOptions.launcherName })
-            moduleName.set(provider { options.launcherOptions.applicationModuleName })
-            mainClassName.set(provider { options.launcherOptions.mainClassName })
-
             applicationJarLocation.set(layout.file(provider { options.applicationJar?.relativeTo(projectDir) }))
             jlinkDir.set(layout.projectDirectory.dir(provider { options.jlinkDir?.relativeTo(projectDir)?.path }))
         }

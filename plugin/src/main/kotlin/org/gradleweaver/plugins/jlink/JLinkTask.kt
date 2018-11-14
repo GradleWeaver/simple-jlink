@@ -6,10 +6,12 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.*
 import org.gradle.internal.jvm.Jvm
+import org.gradle.internal.os.OperatingSystem
 import org.gradle.kotlin.dsl.listProperty
 import org.gradle.kotlin.dsl.property
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.lang.IllegalStateException
 import java.lang.module.ModuleFinder
 import java.lang.module.ModuleReference
 import java.nio.charset.Charset
@@ -19,6 +21,7 @@ import java.nio.file.Paths
 open class JLinkTask : DefaultTask() {
 
     private val objectFactory = project.objects
+    private val launcherGenerator = LauncherGenerator()
 
     /**
      * Link service provider modules and their dependencies.
@@ -69,6 +72,14 @@ open class JLinkTask : DefaultTask() {
     @get:Input
     val optimizeClassForName = objectFactory.property<Boolean>()
 
+    /**
+     * Options for generated launcher scripts. This is an optional property, and if it is not set, then no launcher
+     * script will be generated.
+     */
+    @get:Input
+    @get:Optional
+    val launcherOptions = objectFactory.property<JLinkLauncherOptions>()
+
     @get:Input
     val extraModules = objectFactory.listProperty<String>()
 
@@ -98,6 +109,31 @@ open class JLinkTask : DefaultTask() {
         }
     }
 
+    @TaskAction
+    fun generateLauncherScript() {
+        val launcherOptions = this.launcherOptions.orNull
+        if (launcherOptions == null) {
+            return
+        }
+
+        val os = OperatingSystem.current()
+        val vmOpts = launcherOptions.vmOptions.joinToString(separator = " ")
+
+        val scriptText = if (applicationJarLocation.isPresent) {
+            launcherGenerator.generateJarScript(os, vmOpts, applicationJarLocation.get().asFile.name)
+        } else {
+            if (launcherOptions.applicationModuleName == null) {
+                throw IllegalStateException("Application module must be specified")
+            }
+            if (launcherOptions.mainClassName == null) {
+                throw IllegalStateException("Application main class must be specified")
+            }
+            launcherGenerator.generateModuleLaunchScript(os, vmOpts, launcherOptions.applicationModuleName!!, launcherOptions.mainClassName!!)
+        }
+
+        launcherGenerator.generateScriptFile(os, scriptText, getJlinkDirOrDefault().resolve("bin"), launcherOptions.launcherName ?: project.name)
+    }
+
     private fun getJlinkDirOrDefault(): File {
         return jlinkDir.asFile.getOrElse(project.buildDir.resolve("jlink"))
     }
@@ -116,6 +152,7 @@ open class JLinkTask : DefaultTask() {
         )
 
         // Use the automatic module path, determined from the project dependencies
+        // TODO: Add application jar, if it is set
         val files = project.configurations.getByName("runtime").toList()
         if (files.isNotEmpty()) {
             commandBuilder.add("--module-path")

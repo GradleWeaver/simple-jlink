@@ -32,7 +32,7 @@ open class JLinkPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val extension = project.extensions.create(EXTENSION_NAME, JLinkExtension::class, project)
 
-        extension.configure.all {
+        extension.jlinkConfigurations.all {
             generateTasks(this, project)
         }
     }

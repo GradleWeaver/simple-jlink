@@ -19,7 +19,7 @@ class JLinkPluginTest : AbstractPluginTest() {
                 // This extension should have been added by the accessor below.
                 jlink {
                     assert(this is ${JLinkExtension::class.qualifiedName})
-                    configure {
+                    jlinkConfigurations {
                         assert(this is ${NamedDomainObjectCollection::class.qualifiedName}<*>)
                     }
                 }

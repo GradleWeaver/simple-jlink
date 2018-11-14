@@ -10,7 +10,7 @@ open class JLinkExtension
 internal constructor(
         project: Project
 ) {
-    val configure: NamedDomainObjectContainer<JLinkOptions> = project.container(JLinkOptions::class.java) { name ->
+    val jlinkConfigurations: NamedDomainObjectContainer<JLinkOptions> = project.container(JLinkOptions::class.java) { name ->
         JLinkOptions(project = project, name = name)
     }
 
@@ -43,6 +43,6 @@ internal constructor(
      * @param configurationAction the action to use to set up the configuration
      */
     fun register(name: String, configurationAction: Action<in JLinkOptions>)
-            = configure.register(name, configurationAction)
+            = jlinkConfigurations.register(name, configurationAction)
 
 }

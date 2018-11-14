@@ -79,7 +79,6 @@ open class JLinkPlugin : Plugin<Project> {
             // Some workarounds to allow the options to have the JAR file and jlink dir specified as File objects
             // instead of Gradle Property objects
             applicationJarLocation.set(layout.file(provider { options.applicationJar?.relativeTo(projectDir) }))
-            jlinkDir.set(layout.projectDirectory.dir(provider { options.jlinkDir?.relativeTo(projectDir)?.path }))
         }
     }
 

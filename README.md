@@ -18,7 +18,6 @@ plugins {
 jlink {
   "configuration name" {
     applicationJar = tasks.getByName<Jar>("jar").archivePath // No default value
-    jlinkDir = buildDir.resolve("jlink")
     
     // jlink executable options. See the reference page for details
     bindServices = false
@@ -36,6 +35,16 @@ jlink {
     // Single method to exclude header files, man pages, and debug symbols
     // Also sets the compression level to ZIP (maximum)
     useMinimalImage()
+    
+    // Generate a launcher script
+    launcher {
+      launcherName = "LauncherName"
+      vmOptions = listOf("-Xms512m", "-Xmx4G")
+      
+      // Only required if the app and all its dependencies are modular
+      applicationModuleName = "com.example.app"
+      mainClassName = "com.example.app.Main"
+    }
   }
 }
 ```
@@ -45,7 +54,6 @@ See the [samples](samples) directory for more examples on the jlink plugin in ac
 ## Unavailable Options
 
 `--disable-plugin pluginname`  
-`--launcher`  
 `--limit-modules`  
 `--save-opts`  
 `@filename`

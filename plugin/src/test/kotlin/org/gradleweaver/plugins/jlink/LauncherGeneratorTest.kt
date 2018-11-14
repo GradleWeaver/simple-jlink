@@ -18,13 +18,7 @@ class LauncherGeneratorTest {
 
         assertAll({
             assertTrue(scriptText.contains("JLINK_VM_OPTIONS=\"$vmOptions\""), "Script text had incorrect VM options")
-        }, { assertTrue(scriptText.contains("-jar \$DIR/$jarName"), "Script does not launch jar") })
-    }
-
-    @Test
-    fun testLinuxModule() {
-        val scriptText = generator.generateModuleLaunchScript(os = OperatingSystem.LINUX, moduleName = "mod", mainClassName = "main")
-        println(scriptText)
+        }, { assertTrue(scriptText.contains("-jar \"\$DIR/$jarName\""), "Script does not launch jar") })
     }
 
     @Test

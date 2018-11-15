@@ -25,7 +25,7 @@ jlink {
     endianess.set(JLinkTask.Endianness.SYSTEM_DEFAULT)
     ignoreSigningInformation.set(false)
     excludeHeaderFiles.set(false)
-    excludeManPages .set(false)
+    excludeManPages.set(false)
     stripDebug.set(false)
     optimizeClassForName.set(false)
     

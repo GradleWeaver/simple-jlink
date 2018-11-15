@@ -106,10 +106,11 @@ open class JLinkTask : DefaultTask() {
                 into("${getJlinkTargetDir()}/bin")
             }
         }
+
+        generateLauncherScript()
     }
 
-    @TaskAction
-    fun generateLauncherScript() {
+    private fun generateLauncherScript() {
         val launcherOptions = this.launcherOptions.orNull
         if (launcherOptions == null) {
             return

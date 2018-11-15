@@ -17,20 +17,20 @@ plugins {
 
 jlink {
   "configuration name" {
-    applicationJar = tasks.getByName<Jar>("jar").archivePath // No default value
+    applicationJar.set(provider { tasks.getByName<Jar>("jar").archivePath }) // No default value
     
     // jlink executable options. See the reference page for details
-    bindServices = false
-    compressionLevel = JLinkTask.CompressionLevel.NONE
-    endianess = JLinkTask.Endianness.SYSTEM_DEFAULT
-    ignoreSigningInformation = false
-    excludeHeaderFiles = false
-    excludeManPages = false
-    stripDebug = false
-    optimizeClassForName = false
+    bindServices.set(false)
+    compressionLevel.set(JLinkTask.CompressionLevel.NONE)
+    endianess.set(JLinkTask.Endianness.SYSTEM_DEFAULT)
+    ignoreSigningInformation.set(false)
+    excludeHeaderFiles.set(false)
+    excludeManPages .set(false)
+    stripDebug.set(false)
+    optimizeClassForName.set(false)
     
     // Extra modules to link that are not discovered by jdeps
-    extraModules = listOf("module1", "module2", ...)
+    extraModules.addAll("module1", "module2", ...)
     
     // Single method to exclude header files, man pages, and debug symbols
     // Also sets the compression level to ZIP (maximum)
@@ -38,12 +38,12 @@ jlink {
     
     // Generate a launcher script
     launcher {
-      launcherName = "LauncherName"
-      vmOptions = listOf("-Xms512m", "-Xmx4G")
+      launcherName.set("LauncherName")
+      vmOptions.addAll("-Xms512m", "-Xmx4G")
       
       // Only required if the app and all its dependencies are modular
-      applicationModuleName = "com.example.app"
-      mainClassName = "com.example.app.Main"
+      applicationModuleName.set("com.example.app")
+      mainClassName.set("com.example.app.Main")
     }
   }
 }

@@ -1,6 +1,5 @@
 package org.gradleweaver.plugins.jlink
 
-import org.gradle.internal.os.OperatingSystem
 import java.io.File
 import java.net.URL
 
@@ -28,8 +27,7 @@ class LauncherGenerator {
      * @return the generated script file
      */
     fun generateScriptFile(os: OperatingSystem, scriptText: String, dir: File, launcherName: String): File {
-        val extension = if (os.isWindows) ".bat" else ""
-        val scriptFileName = "$launcherName$extension"
+        val scriptFileName = os.getScriptName(launcherName)
         val scriptFile = dir.resolve(scriptFileName)
         scriptFile.writeText(scriptText)
         scriptFile.setExecutable(true, false)

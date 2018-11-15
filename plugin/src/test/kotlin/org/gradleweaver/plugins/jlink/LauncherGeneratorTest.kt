@@ -1,6 +1,5 @@
 package org.gradleweaver.plugins.jlink
 
-import org.gradle.internal.os.OperatingSystem
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertAll

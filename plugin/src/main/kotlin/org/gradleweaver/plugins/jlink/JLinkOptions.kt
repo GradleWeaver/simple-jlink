@@ -12,6 +12,7 @@ class JLinkOptions(project: Project, val name: String) {
      * The application JAR. This will be copied into the generated jlink image's `bin` directory, next to the
      * `java` executable.
      */
+    // This is a Property<File> instead of RegularFileProperty to allow normal File objects to be used
     val applicationJar = objectFactory.property<File>()
 
     /**

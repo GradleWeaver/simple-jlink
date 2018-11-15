@@ -58,23 +58,20 @@ open class JLinkPlugin : Plugin<Project> {
     }
 
     private fun JLinkTask.copyFromOptions(options: JLinkOptions) {
-        with(project) {
-            imageName.set(provider { options.name })
-            bindServices.set(provider { options.bindServices.orNull })
-            compressionLevel.set(provider { options.compressionLevel.orNull })
-            endianness.set(provider { options.endianness.orNull })
-            ignoreSigningInformation.set(provider { options.ignoreSigningInformation.orNull })
-            excludeHeaderFiles.set(provider { options.excludeHeaderFiles.orNull })
-            excludeManPages.set(provider { options.excludeManPages.orNull })
-            stripDebug.set(provider { options.stripDebug.orNull })
-            optimizeClassForName.set(provider { options.optimizeClassForName.orNull })
-            extraModules.set(provider { options.extraModules.orNull })
-            launcherOptions.set(provider { options.launcherOptions })
+        imageName.set(options.name)
+        bindServices.set(options.bindServices)
+        compressionLevel.set(options.compressionLevel)
+        endianness.set(options.endianness)
+        ignoreSigningInformation.set(options.ignoreSigningInformation)
+        excludeHeaderFiles.set(options.excludeHeaderFiles)
+        excludeManPages.set(options.excludeManPages)
+        stripDebug.set(options.stripDebug)
+        optimizeClassForName.set(options.optimizeClassForName)
+        extraModules.set(options.extraModules)
+        launcherOptions.set(options.launcherOptions)
 
-            // Some workarounds to allow the options to have the JAR file and jlink dir specified as File objects
-            // instead of Gradle Property objects
-            applicationJarLocation.set(layout.file(provider { options.applicationJar.orNull?.relativeTo(projectDir) }))
-        }
+        // Workaround to bind our RegularFileProperty to the Property<File> used by JLinkOptions
+        applicationJarLocation.set(project.layout.file(options.applicationJar))
     }
 
 }

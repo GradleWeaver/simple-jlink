@@ -159,36 +159,34 @@ open class JLinkTask : DefaultTask() {
             commandBuilder.add(dependencyModules.asPath())
         }
 
-        if (bindServices.getOrElse(false)) {
+        if (bindServices.get()) {
             commandBuilder.add("--bind-services")
         }
 
-        if (compressionLevel.isPresent) {
-            commandBuilder.add("--compress=${compressionLevel.get().jlinkValue}")
-        }
+        commandBuilder.add("--compress=${compressionLevel.get().jlinkValue}")
 
         if (endianness.getOrElse(Endianness.SYSTEM_DEFAULT) != Endianness.SYSTEM_DEFAULT) {
             commandBuilder.add("--endian")
             commandBuilder.add(endianness.get().name.toLowerCase())
         }
 
-        if (ignoreSigningInformation.getOrElse(false)) {
+        if (ignoreSigningInformation.get()) {
             commandBuilder.add("--ignore-signing-information")
         }
 
-        if (excludeHeaderFiles.getOrElse(false)) {
+        if (excludeHeaderFiles.get()) {
             commandBuilder.add("--no-header-files")
         }
 
-        if (excludeManPages.getOrElse(false)) {
+        if (excludeManPages.get()) {
             commandBuilder.add("--no-man-pages")
         }
 
-        if (stripDebug.getOrElse(false)) {
+        if (stripDebug.get()) {
             commandBuilder.add("--strip-debug")
         }
 
-        if (optimizeClassForName.getOrElse(false)) {
+        if (optimizeClassForName.get()) {
             commandBuilder.add("--class-for-name")
         }
 

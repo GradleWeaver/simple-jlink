@@ -42,8 +42,8 @@ jlink {
         useMinimalImage()
         applicationJar.set(provider { jarTask.archivePath })
         launcher {
-            setVmOptions(application.applicationDefaultJvmArgs)
-            vmOptions("-Xms512M -Xmx2G")
+            vmOptions.addAll(application.applicationDefaultJvmArgs)
+            vmOptions.addAll("-Xms512M", "-Xmx2G")
             launcherName.set("SampleJavaFxApp")
         }
     }

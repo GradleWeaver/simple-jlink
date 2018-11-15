@@ -163,7 +163,7 @@ open class JLinkTask : DefaultTask() {
         }
 
         if (compressionLevel.isPresent) {
-            commandBuilder.add("--compress=${compressionLevel.get().ordinal}")
+            commandBuilder.add("--compress=${compressionLevel.get().jlinkValue}")
         }
 
         if (endianness.getOrElse(Endianness.SYSTEM_DEFAULT) != Endianness.SYSTEM_DEFAULT) {

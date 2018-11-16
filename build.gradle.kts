@@ -1,3 +1,5 @@
+import org.gradleweaver.plugins.jlink.JLinkTask
+
 buildscript {
     dependencies {
         classpath("org.gradleweaver.plugins:simple-jlink:+")
@@ -21,9 +23,9 @@ project(":samples") {
 
 tasks.named<Task>("check") {
     dependsOn(gradle.includedBuild("simple-jlink").task(":check"))
-    dependsOn(findProject(":samples:javafx-app")!!.tasks.getByName("jlinkGenerateReleaseImage"))
-    dependsOn(findProject(":samples:simple-jar")!!.tasks.getByName("jlinkGenerateReleaseImage"))
-    dependsOn(findProject(":samples:groovy-dsl")!!.tasks.getByName("jlinkGenerateReleaseImage"))
+    dependsOn(findProject(":samples:javafx-app")!!.tasks.withType<JLinkTask>())
+    dependsOn(findProject(":samples:simple-jar")!!.tasks.withType<JLinkTask>())
+    dependsOn(findProject(":samples:groovy-dsl")!!.tasks.withType<JLinkTask>())
 }
 
 apply(from = "gradle/wrapper.gradle.kts")

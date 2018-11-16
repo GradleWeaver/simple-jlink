@@ -19,10 +19,12 @@ open class JLinkPlugin : Plugin<Project> {
             return words.split(' ').joinToString(separator = "") { it.capitalize() }
         }
 
+        @JvmStatic
         fun generateJLinkTaskName(configurationName: String): String {
             return "$JLINK_TASK_NAME${capitalizeAndJoinWords(configurationName)}"
         }
 
+        @JvmStatic
         fun generateJLinkArchiveTaskName(type: String, configurationName: String): String {
             return "$JLINK_ARCHIVE_TASK_NAME$type${capitalizeAndJoinWords(configurationName)}"
         }
@@ -55,23 +57,6 @@ open class JLinkPlugin : Plugin<Project> {
             compression = Compression.GZIP
             extension = "tar.gz"
         }
-    }
-
-    private fun JLinkTask.copyFromOptions(options: JLinkOptions) {
-        imageName.set(options.name)
-        bindServices.set(options.bindServices)
-        compressionLevel.set(options.compressionLevel)
-        endianness.set(options.endianness)
-        ignoreSigningInformation.set(options.ignoreSigningInformation)
-        excludeHeaderFiles.set(options.excludeHeaderFiles)
-        excludeManPages.set(options.excludeManPages)
-        stripDebug.set(options.stripDebug)
-        optimizeClassForName.set(options.optimizeClassForName)
-        extraModules.set(options.extraModules)
-        launcherOptions.set(options.launcherOptions)
-
-        // Workaround to bind our RegularFileProperty to the Property<File> used by JLinkOptions
-        applicationJarLocation.set(project.layout.file(options.applicationJar))
     }
 
 }

@@ -203,6 +203,23 @@ open class JLinkTask : DefaultTask() {
         }
     }
 
+    internal fun copyFromOptions(options: JLinkOptions) {
+        imageName.set(options.name)
+        bindServices.set(options.bindServices)
+        compressionLevel.set(options.compressionLevel)
+        endianness.set(options.endianness)
+        ignoreSigningInformation.set(options.ignoreSigningInformation)
+        excludeHeaderFiles.set(options.excludeHeaderFiles)
+        excludeManPages.set(options.excludeManPages)
+        stripDebug.set(options.stripDebug)
+        optimizeClassForName.set(options.optimizeClassForName)
+        extraModules.set(options.extraModules)
+        launcherOptions.set(options.launcherOptions)
+
+        // Workaround to bind our RegularFileProperty to the Property<File> used by JLinkOptions
+        applicationJarLocation.set(project.layout.file(options.applicationJar))
+    }
+
 }
 
 private val javaBin by lazy {
@@ -214,7 +231,7 @@ private val javaBin by lazy {
  *
  * @param jar the path to the JAR file on which to run `jdeps`
  */
-fun jdeps(project: Project, jar: String): List<String> {
+private fun jdeps(project: Project, jar: String): List<String> {
     return ByteArrayOutputStream().use { os ->
         // Get the standard library modules used by the project and its dependencies
         project.exec {

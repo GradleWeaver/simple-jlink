@@ -7,7 +7,6 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
-import org.gradle.internal.jvm.Jvm
 import org.gradle.kotlin.dsl.listProperty
 import org.gradle.kotlin.dsl.property
 import java.io.ByteArrayOutputStream
@@ -207,7 +206,7 @@ open class JLinkTask : DefaultTask() {
 }
 
 private val javaBin by lazy {
-    Jvm.current().javaHome.resolve("bin")
+    File(System.getProperty("java.home")).resolve("bin")
 }
 
 /**

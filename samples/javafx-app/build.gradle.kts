@@ -2,7 +2,7 @@ import org.gradleweaver.plugins.jlink.JLinkTask
 import org.gradle.internal.os.OperatingSystem
 
 plugins {
-    `application`
+    id ("com.zyxist.chainsaw") version "0.3.1"
 }
 
 repositories {
@@ -33,14 +33,9 @@ fun DependencyHandler.javafx(name: String, version: String = "11"): Dependency {
     return create("org.openjfx:$name:$version:$classifier")
 }
 
-val jarTask: Jar by lazy {
-    tasks.getByName<Jar>("jar")
-}
-
 jlink {
     "release image" {
         useMinimalImage()
-        applicationJar.set(provider { jarTask.archivePath })
         launcher {
             vmOptions.addAll(application.applicationDefaultJvmArgs)
             vmOptions.addAll("-Xms512M", "-Xmx2G")
@@ -49,18 +44,6 @@ jlink {
     }
 }
 
-tasks.withType<JLinkTask>().configureEach {
-    if (name == "jlinkGenerateReleaseImage") {
-        dependsOn("jar")
-    }
-}
-
 application {
     mainClassName = "org.gradleweaver.plugin.sample.jlink.javafx.Main"
-}
-
-tasks.withType<Jar>().configureEach {
-    manifest {
-        attributes("Main-Class" to application.mainClassName)
-    }
 }

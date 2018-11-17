@@ -2,11 +2,16 @@ package org.gradleweaver.plugins.jlink
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
-import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.file.Directory
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.plugins.JavaApplication
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.jvm.tasks.Jar
+import org.gradle.kotlin.dsl.getByName
 import org.gradle.kotlin.dsl.listProperty
 import org.gradle.kotlin.dsl.property
 import java.io.ByteArrayOutputStream
@@ -14,6 +19,7 @@ import java.io.File
 import java.lang.module.ModuleFinder
 import java.lang.module.ModuleReference
 import java.nio.charset.Charset
+import java.nio.file.Path
 import java.nio.file.Paths
 
 // Note: must be open so Gradle can create a proxy subclass
@@ -88,17 +94,41 @@ open class JLinkTask : DefaultTask() {
     @get:Input
     val extraModules = objectFactory.listProperty<String>()
 
-    @get:InputFile
-    val applicationJarLocation: RegularFileProperty = newInputFile()
+    /**
+     * The directory into which the jlink image is generated. This defaults to build/jlink/[imageName]
+     */
+    @get:OutputDirectory
+    val jlinkDir = newOutputDirectory(project.layout.buildDirectory.dir(imageName.map { name -> "jlink/$name" }))
+
+    private fun newOutputDirectory(provider: Provider<Directory>): DirectoryProperty {
+        val dir = newOutputDirectory()
+        dir.set(provider)
+        return dir
+    }
+
+    /**
+     * The location of the project jar file.
+     */
+    private val projectJar: File
+        get() = project.tasks.getByName<Jar>("jar").archivePath
+
+    /**
+     * The project's module.
+     */
+    private val projectModule: ModuleReference
+        get() = ModuleFinder.of(projectJar.toPath())
+            .findAll()
+            .first()
 
     @TaskAction
     fun executeJLink() {
+        jlinkDir.set(getJlinkTargetDir())
         execJLink(project)
 
-        // Copy the application JAR into the jlink bin directory, if specified
-        if (applicationJarLocation.isPresent) {
+        // Copy the application JAR into the jlink bin directory if it is nonmodular
+        if (projectModule.descriptor().isAutomatic) {
             project.copy {
-                from(applicationJarLocation)
+                from(projectJar)
                 rename {
                     "${project.name.toLowerCase()}.jar"
                 }
@@ -109,28 +139,42 @@ open class JLinkTask : DefaultTask() {
         generateLauncherScript()
     }
 
+    @Suppress("USELESS_ELVIS")
     private fun generateLauncherScript() {
-        val launcherOptions = this.launcherOptions.orNull
-        if (launcherOptions == null) {
+        if (launcherOptions.isNotPresent) {
             return
         }
+        val launcherOptions = launcherOptions.get()
 
         val os = OperatingSystem.current()
-        val vmOpts = launcherOptions.getVmOptions().joinToString(separator = " ")
+        val vmOpts = launcherOptions.vmOptions.get().joinToString(separator = " ")
 
-        val scriptText = if (applicationJarLocation.isPresent) {
-            launcherGenerator.generateJarScript(os, vmOpts, applicationJarLocation.get().asFile.name)
+        val allDependenciesModular = allDependenciesModular()
+
+        val applicationModule = projectModule
+        val scriptText = if (allDependenciesModular && applicationModule.descriptor().isAutomatic) {
+            // Application is not modular, generate a script to launch the jar file
+            launcherGenerator.generateJarScript(os, vmOpts, projectJar.name)
         } else {
-            if (launcherOptions.applicationModuleName.isNotPresent()) {
-                throw IllegalStateException("Application module must be specified")
+            // Application _is_ modular
+            val mod = applicationModule.descriptor()
+            if (mod.isAutomatic) {
+                throw IllegalStateException("The application is not modular!")
             }
-            if (launcherOptions.mainClassName.isNotPresent()) {
-                throw IllegalStateException("Application main class must be specified")
-            }
-            launcherGenerator.generateModuleLaunchScript(os, vmOpts, launcherOptions.getApplicationModuleName(), launcherOptions.getMainClassName())
+            val moduleName = mod.name()
+            val mainClassName = project.extensions.getByType(JavaApplication::class.java).mainClassName
+                ?: throw IllegalStateException("No main class name specified in the application plugin")
+            launcherGenerator.generateModuleLaunchScript(os, vmOpts, moduleName, mainClassName)
         }
 
-        launcherGenerator.generateScriptFile(os, scriptText, getJlinkTargetDir().resolve("bin"), launcherOptions.getLauncherName())
+        launcherGenerator.generateScriptFile(os, scriptText, getJlinkTargetDir().resolve("bin"), launcherOptions.launcherName.get())
+    }
+
+    private fun allDependenciesModular(): Boolean {
+        val dependencyFiles = project.configurations.getByName("runtime").files.map { it.toPath() }
+        return ModuleFinder.of(*dependencyFiles.toTypedArray())
+            .findAll()
+            .size == dependencyFiles.size
     }
 
     private fun getJlinkTargetDir(): File {
@@ -142,20 +186,33 @@ open class JLinkTask : DefaultTask() {
         val commandBuilder = mutableListOf<String>()
         commandBuilder.add(javaBin.resolve("jlink").toString())
         commandBuilder.add("--add-modules")
+        val applicationModuleName = if (!projectModule.descriptor().isAutomatic) {
+            projectModule.descriptor().name()
+        } else {
+            ""
+        }
         commandBuilder.add(
                 listOf(
                         jdeps(project, project.buildDir.resolve("classes").absolutePath).joinToString(separator = ","),
                         dependencyModules.joinToString(separator = ",") { it.descriptor().name() },
-                        extraModules.getOrElse(listOf()).joinToString(separator = ",")
-                ).joinToString(separator = ",")
+                        extraModules.getOrElse(listOf()).joinToString(separator = ","),
+                        applicationModuleName
+                ).joinToString(separator = ",").replace(Regex("""(,+)|(,$)"""), ",")
         )
 
-        // Use the automatic module path, determined from the project dependencies
-        // TODO: Add application jar, if it is set
+        // Use the automatic module path, determined from the project dependencies, as well as the application JAR
+        // (if it is modular)
         val files = project.configurations.getByName("runtime").toList()
-        if (files.isNotEmpty()) {
+        if (files.isNotEmpty() || !projectModule.descriptor().isAutomatic) {
             commandBuilder.add("--module-path")
-            commandBuilder.add(dependencyModules.asPath())
+            val path = mutableListOf<String>()
+            if (files.isNotEmpty()) {
+                path.add(dependencyModules.asPath())
+            }
+            if (!projectModule.descriptor().isAutomatic) {
+                path.add(projectModule.location().get().path)
+            }
+            commandBuilder.add(path.joinToString(separator = System.getProperty("path.separator")))
         }
 
         if (bindServices.get()) {
@@ -215,9 +272,6 @@ open class JLinkTask : DefaultTask() {
         optimizeClassForName.set(options.optimizeClassForName)
         extraModules.set(options.extraModules)
         launcherOptions.set(options.launcherOptions)
-
-        // Workaround to bind our RegularFileProperty to the Property<File> used by JLinkOptions
-        applicationJarLocation.set(project.layout.file(options.applicationJar))
     }
 
 }
@@ -272,4 +326,13 @@ private fun getDependencyModules(project: Project): Collection<ModuleReference> 
     val allModuleReferences = ModuleFinder.of(*dependencyFilesList).findAll()
     return allModuleReferences
             .filter { !it.descriptor().isAutomatic } // Can't add automatic modules to a jlink image
+}
+
+private fun isModularJar(path: Path): Boolean {
+    return ModuleFinder.of(path)
+        .findAll()
+        .stream()
+        .map { !it.descriptor().isAutomatic }
+        .findAny()
+        .orElse(false)
 }

@@ -26,6 +26,7 @@ tasks.named<Task>("check") {
     dependsOn(findProject(":samples:javafx-app")!!.tasks.withType<JLinkTask>())
     dependsOn(findProject(":samples:simple-jar")!!.tasks.withType<JLinkTask>())
     dependsOn(findProject(":samples:groovy-dsl")!!.tasks.withType<JLinkTask>())
+    dependsOn(findProject(":samples:modular-app")!!.tasks.withType<JLinkTask>())
 }
 
 apply(from = "gradle/wrapper.gradle.kts")

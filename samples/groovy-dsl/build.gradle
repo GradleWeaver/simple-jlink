@@ -1,20 +1,11 @@
-plugins {
-    id('application')
-}
-
 application {
     mainClassName = 'org.gradleweaver.plugin.sample.jlink.groovydsl.Main'
 }
 
 jlink {
     register("release image") {
-        applicationJar.set(provider { tasks.withType(Jar).getByName("jar").archivePath })
         useMinimalImage()
     }
-}
-
-tasks.named("jlinkGenerateReleaseImage").configure {
-    dependsOn("jar")
 }
 
 tasks.withType(Jar).configureEach {

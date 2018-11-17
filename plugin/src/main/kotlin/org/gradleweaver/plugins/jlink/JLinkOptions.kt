@@ -2,18 +2,10 @@ package org.gradleweaver.plugins.jlink
 
 import org.gradle.api.Action
 import org.gradle.api.Project
-import java.io.File
 
 class JLinkOptions(project: Project, val name: String) {
 
     private val objectFactory = project.objects
-
-    /**
-     * The application JAR. This will be copied into the generated jlink image's `bin` directory, next to the
-     * `java` executable.
-     */
-    // This is a Property<File> instead of RegularFileProperty to allow normal File objects to be used
-    val applicationJar = objectFactory.property<File>()
 
     /**
      * Extra modules to add to the image that cannot be automatically detected by jdeps, such as those referenced
@@ -25,7 +17,7 @@ class JLinkOptions(project: Project, val name: String) {
     /**
      * Link service provider modules and their dependencies.
      */
-    val bindServices = objectFactory.property<Boolean>()
+    val bindServices = objectFactory.property(false)
 
     /**
      * Enable compression of resources.
@@ -66,7 +58,7 @@ class JLinkOptions(project: Project, val name: String) {
     /**
      * Options for the application launch script.
      */
-    val launcherOptions = JLinkLauncherOptions(project)
+    internal val launcherOptions = objectFactory.property(JLinkLauncherOptions(project))
 
     /**
      * Configures the options to minimize the size of generated runtime images.
@@ -82,7 +74,7 @@ class JLinkOptions(project: Project, val name: String) {
      * Configures the application launch script.
      */
     fun launcher(launcherConfigurationAction: Action<in JLinkLauncherOptions>) {
-        launcherConfigurationAction.execute(launcherOptions)
+        launcherConfigurationAction.execute(launcherOptions.get())
     }
 
 }

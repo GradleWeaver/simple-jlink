@@ -66,13 +66,13 @@ open class JLinkPlugin : Plugin<Project> {
             group = JLINK_TASK_GROUP
             description = "Generates a .zip archive file of a native Java runtime image for '${options.name}'."
             from(project.tasks.getByName(jlinkTaskName).outputs)
-            archiveName = "${project.name}-${options.name.toLowerCase().replace(' ', '-')}.zip"
+            baseName = "${project.name}-${options.name.toLowerCase().replace(' ', '-')}"
         }
         project.tasks.register(generateJLinkArchiveTaskName("Tar", options.name), Tar::class.java) {
             group = JLINK_TASK_GROUP
             description = "Generates a .tar.gz archive file of a native Java runtime image for '${options.name}'."
             from(project.tasks.getByName(jlinkTaskName).outputs)
-            archiveName = "${project.name}-${options.name.toLowerCase().replace(' ', '-')}.tar.gz"
+            baseName = "${project.name}-${options.name.toLowerCase().replace(' ', '-')}"
             compression = Compression.GZIP
             extension = "tar.gz"
         }

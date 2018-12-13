@@ -17,8 +17,6 @@ plugins {
 
 jlink {
   "configuration name" {
-    applicationJar.set(provider { tasks.getByName<Jar>("jar").archivePath }) // No default value
-    
     // jlink executable options. See the reference page for details
     bindServices.set(false)
     compressionLevel.set(JLinkTask.CompressionLevel.NONE)
@@ -40,10 +38,6 @@ jlink {
     launcher {
       launcherName.set("LauncherName")
       vmOptions.addAll("-Xms512m", "-Xmx4G")
-      
-      // Only required if the app and all its dependencies are modular
-      applicationModuleName.set("com.example.app")
-      mainClassName.set("com.example.app.Main")
     }
   }
 }
@@ -53,7 +47,29 @@ See the [samples](samples) directory for more examples on the jlink plugin in ac
 
 ## Unavailable Options
 
-`--disable-plugin pluginname`  
-`--limit-modules`  
-`--save-opts`  
-`@filename`
+| Option | Reason |
+|---|---|
+`--disable-plugin pluginname` | All JLink plugins are available, though not necessarily used  
+`--limit-modules` | Only necessary modules are linked. This option may be enabled in a future release.
+`--save-opts` | Options are stored in the build script!  
+`@filename` | Options are stored in the build script!
+
+## JLink Tasks
+
+| Task | Description |
+|---|---|
+`jlinkGenerate{configuration}` | Generates the JLink image for the given configuration name
+`jlinkArchiveZip{configuration}` | Generates a `.zip` compressed archive containing the entire JLink image
+`jlinkArchiveTar{configuration}` | Generates a `.tar` uncompressed archive containing the entire JLink image
+
+`{configuration}` is generated based on the name of the configuration given in the build script.
+If a configuration name is multiple words, each word will be capitalized and the whitespace removed
+to create the name of the JLink task. In the example above, setting the configuration name to `"configuration name"`
+will result in `jlinkGenerateConfigurationName` for the task to generate the JLink image for that
+configuration, and `jlinkArchive[Zip|Tar]ConfigurationName` to create a zip or tar archive for that image.
+
+Generated JLink images are created in `build/jlink/{configuration-name}`. The configuration name is exactly
+as specified in the build script.
+
+Generated archives are created in `build/distributions/{project-name}-{configuration}`, eg `example-project-release.zip`.
+

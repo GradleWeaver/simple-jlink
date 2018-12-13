@@ -3,7 +3,7 @@ package org.gradleweaver.plugins.jlink
 import org.gradle.api.Action
 import org.gradle.api.Project
 
-class JLinkOptions(project: Project, val name: String) {
+class JLinkOptions(private val project: Project, val name: String) {
 
     private val objectFactory = project.objects
 
@@ -56,9 +56,14 @@ class JLinkOptions(project: Project, val name: String) {
     val optimizeClassForName = objectFactory.property(false)
 
     /**
-     * Options for the application launch script.
+     * VM options for the launcher script. Set via the DSL method [launcher].
      */
-    internal val launcherOptions = objectFactory.property(JLinkLauncherOptions(project))
+    internal val launcherVmOptions = objectFactory.listProperty<String>()
+
+    /**
+     * The name of the launcher script. Set via the DSL method [launcher].
+     */
+    internal val launcherName = objectFactory.property<String>()
 
     /**
      * Configures the options to minimize the size of generated runtime images.
@@ -74,7 +79,10 @@ class JLinkOptions(project: Project, val name: String) {
      * Configures the application launch script.
      */
     fun launcher(launcherConfigurationAction: Action<in JLinkLauncherOptions>) {
-        launcherConfigurationAction.execute(launcherOptions.get())
+        val tmp = JLinkLauncherOptions(project)
+        launcherConfigurationAction.execute(tmp)
+        launcherVmOptions.set(tmp.vmOptions)
+        launcherName.set(tmp.launcherName)
     }
 
 }

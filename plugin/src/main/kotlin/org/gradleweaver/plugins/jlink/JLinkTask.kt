@@ -19,7 +19,6 @@ import java.io.File
 import java.lang.module.ModuleFinder
 import java.lang.module.ModuleReference
 import java.nio.charset.Charset
-import java.nio.file.Path
 import java.nio.file.Paths
 
 // Note: must be open so Gradle can create a proxy subclass
@@ -83,13 +82,14 @@ open class JLinkTask : DefaultTask() {
     @get:Input
     val optimizeClassForName = objectFactory.property<Boolean>()
 
-    /**
-     * Options for generated launcher scripts. This is an optional property, and if it is not set, then no launcher
-     * script will be generated.
-     */
     @get:Input
     @get:Optional
-    val launcherOptions = objectFactory.property<JLinkLauncherOptions>()
+    val launcherVmOptions = objectFactory.listProperty<String>()
+
+    @get:Input
+    @get:Optional
+    val launcherName = objectFactory.property<String>()
+
 
     @get:Input
     val extraModules = objectFactory.listProperty<String>()
@@ -141,13 +141,14 @@ open class JLinkTask : DefaultTask() {
 
     @Suppress("USELESS_ELVIS")
     private fun generateLauncherScript() {
-        if (launcherOptions.isNotPresent) {
+        if (launcherName.isNotPresent) {
             return
         }
-        val launcherOptions = launcherOptions.get()
+        val launcherName = this.launcherName.get()
+        val launcherVmOptions = this.launcherVmOptions.get()
 
         val os = OperatingSystem.current()
-        val vmOpts = launcherOptions.vmOptions.get().joinToString(separator = " ")
+        val vmOpts = launcherVmOptions.joinToString(separator = " ")
 
         val allDependenciesModular = allDependenciesModular()
 
@@ -167,7 +168,7 @@ open class JLinkTask : DefaultTask() {
             launcherGenerator.generateModuleLaunchScript(os, vmOpts, moduleName, mainClassName)
         }
 
-        launcherGenerator.generateScriptFile(os, scriptText, getJlinkTargetDir().resolve("bin"), launcherOptions.launcherName.get())
+        launcherGenerator.generateScriptFile(os, scriptText, getJlinkTargetDir().resolve("bin"), launcherName)
     }
 
     private fun allDependenciesModular(): Boolean {
@@ -271,7 +272,8 @@ open class JLinkTask : DefaultTask() {
         stripDebug.set(options.stripDebug)
         optimizeClassForName.set(options.optimizeClassForName)
         extraModules.set(options.extraModules)
-        launcherOptions.set(options.launcherOptions)
+        launcherVmOptions.set(options.launcherVmOptions)
+        launcherName.set(options.launcherName)
     }
 
 }
@@ -326,13 +328,4 @@ private fun getDependencyModules(project: Project): Collection<ModuleReference> 
     val allModuleReferences = ModuleFinder.of(*dependencyFilesList).findAll()
     return allModuleReferences
             .filter { !it.descriptor().isAutomatic } // Can't add automatic modules to a jlink image
-}
-
-private fun isModularJar(path: Path): Boolean {
-    return ModuleFinder.of(path)
-        .findAll()
-        .stream()
-        .map { !it.descriptor().isAutomatic }
-        .findAny()
-        .orElse(false)
 }

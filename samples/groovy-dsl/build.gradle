@@ -1,0 +1,15 @@
+application {
+    mainClassName = 'org.gradleweaver.plugin.sample.jlink.groovydsl.Main'
+}
+
+jlink {
+    register("release image") {
+        useMinimalImage()
+    }
+}
+
+tasks.withType(Jar).configureEach {
+    manifest {
+        attributes(['Main-Class': application.mainClassName])
+    }
+}

@@ -7,7 +7,7 @@ plugins {
     // Makes sure to update the kotlin version below in the test resources as well.
     kotlin("jvm") version "1.2.51"
     `maven-publish`
-    id ("com.gradle.plugin-publish") version "0.9.10"
+    id("com.gradle.plugin-publish") version "0.9.10"
 }
 
 group = "org.gradleweaver.plugins"
@@ -20,7 +20,6 @@ repositories {
 
 dependencies {
     compileOnly(gradleApi())
-    compile(kotlin("stdlib-jdk8"))
     testCompileOnly(gradleTestKit())
 
     fun junitJupiter(name: String, version: String = "5.2.0") =
@@ -49,39 +48,33 @@ publishing {
 }
 
 
-configure<JavaPluginConvention> {
+java {
     sourceCompatibility = JavaVersion.VERSION_1_8
 }
 
-tasks.withType<KotlinCompile> {
+tasks.withType<KotlinCompile>().configureEach {
     kotlinOptions.jvmTarget = "1.8"
 }
 
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
-gradlePlugin {
-    plugins {
-        register("jlink-plugin") {
-            id = "${project.group}.${project.name}"
-            implementationClass = "org.gradleweaver.plugins.jlink.JLinkPlugin"
-            description = "A Gradle plugin for handling platform-specific dependencies and releases."
-        }
-    }
+val registeredPlugin = gradlePlugin.plugins.register("jlink-plugin") {
+    id = "${project.group}.${project.name}"
+    implementationClass = "org.gradleweaver.plugins.jlink.JLinkPlugin"
+    description = "A Gradle plugin for handling platform-specific dependencies and releases."
 }
 
 pluginBundle {
-    val plugin = gradlePlugin.plugins["jlink-plugin"]
-
     website = "https://github.com/gradleweaver/jlink-plugin"
     vcsUrl = "https://github.com/gradleweaver/jlink-plugin"
     tags = listOf("jlink")
 
     plugins {
         create("jlink-plugin") {
-            id = plugin.id
-            displayName = plugin.displayName
+            id = registeredPlugin.get().id
+            displayName = registeredPlugin.get().displayName
         }
     }
 }
@@ -94,7 +87,7 @@ tasks {
     val writeTestProperties by creating(WriteProperties::class) {
         outputFile = processTestResources.destinationDir.resolve("test.properties")
         property("version", version)
-        property("kotlinVersion", "1.2.51")
+        property("kotlinVersion", KotlinVersion.CURRENT)
     }
     processTestResources.dependsOn(writeTestProperties)
     "test" {

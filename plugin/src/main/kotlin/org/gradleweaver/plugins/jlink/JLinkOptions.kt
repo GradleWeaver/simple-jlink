@@ -1,95 +1,88 @@
 package org.gradleweaver.plugins.jlink
 
-class JLinkOptions(val name: String) {
+import org.gradle.api.Action
+import org.gradle.api.Project
+
+class JLinkOptions(private val project: Project, val name: String) {
+
+    private val objectFactory = project.objects
 
     /**
-     * The modules to link. These MUST be on the module path or included in the JDK. If not set, `jdeps` will be run
-     * on the output JAR file from [shadowTask] to automatically determine the modules used.
+     * Extra modules to add to the image that cannot be automatically detected by jdeps, such as those referenced
+     * reflectively (e.g. using `Class.forName`). Typically, only modules from the JDK need to be explicitly specified;
+     * modules from library dependencies are always added regardless of what jdeps detects.
      */
-    var modules: List<String> = listOf()
+    val extraModules = objectFactory.listProperty<String>()
 
     /**
      * Link service provider modules and their dependencies.
      */
-    var bindServices = false
+    val bindServices = objectFactory.property(false)
 
     /**
      * Enable compression of resources.
      */
-    var compressionLevel: CompressionLevel = CompressionLevel.NONE
+    val compressionLevel = objectFactory.property(CompressionLevel.NONE)
 
     /**
      * Specifies the byte order of the generated image. The default value is the format of your system's architecture.
      */
-    var endianness: Endianness = Endianness.SYSTEM_DEFAULT
+    val endianness = objectFactory.property(Endianness.SYSTEM_DEFAULT)
 
     /**
      * Suppresses a fatal error when signed modular JARs are linked in the runtime image.
      * The signature-related files of the signed modular JARs are not copied to the runtime image.
      */
-    var ignoreSigningInformation = false
-
-    /**
-     * Specifies the module path.
-     */
-    var modulePath = ""
+    val ignoreSigningInformation = objectFactory.property(false)
 
     /**
      * Excludes header files from the generated image.
      */
-    var excludeHeaderFiles = false
+    val excludeHeaderFiles = objectFactory.property(false)
 
     /**
      * Excludes man pages from the generated image.
      */
-    var excludeManPages = false
+    val excludeManPages = objectFactory.property(false)
 
     /**
      * Strips debug symbols from the generated image.
      */
-    var stripDebug = false
+    val stripDebug = objectFactory.property(false)
 
     /**
      * Optimize `Class.forName` calls to constant class loads.
      */
-    var optimizeClassForName = false
+    val optimizeClassForName = objectFactory.property(false)
 
     /**
-     * Specifies the location of the generated runtime image. By default, this is `${project.dir}/build/jlink`.
+     * VM options for the launcher script. Set via the DSL method [launcher].
      */
-    var output: Any = "build/jlink/"
+    internal val launcherVmOptions = objectFactory.listProperty<String>()
 
-    enum class CompressionLevel {
-        /**
-         * Do no compression on the generated image.
-         */
-        NONE,
+    /**
+     * The name of the launcher script. Set via the DSL method [launcher].
+     */
+    internal val launcherName = objectFactory.property<String>()
 
-        /**
-         * Share constant string objects.
-         */
-        CONSTANT_STRING_SHARING,
-
-        /**
-         * ZIP compression on the generated image.
-         */
-        ZIP
+    /**
+     * Configures the options to minimize the size of generated runtime images.
+     */
+    fun useMinimalImage() {
+        compressionLevel.set(CompressionLevel.ZIP)
+        excludeHeaderFiles.set(true)
+        excludeManPages.set(true)
+        stripDebug.set(true)
     }
 
-    enum class Endianness {
-        /**
-         * Use the endianness of the build system.
-         */
-        SYSTEM_DEFAULT,
-
-        /**
-         * Force little-endian byte order in the generated image.
-         */
-        LITTLE,
-
-        /**
-         * Force big-endian byte order in the generated image.
-         */
-        BIG
+    /**
+     * Configures the application launch script.
+     */
+    fun launcher(launcherConfigurationAction: Action<in JLinkLauncherOptions>) {
+        val tmp = JLinkLauncherOptions(project)
+        launcherConfigurationAction.execute(tmp)
+        launcherVmOptions.set(tmp.vmOptions)
+        launcherName.set(tmp.launcherName)
     }
+
 }

@@ -73,8 +73,6 @@ open class JLinkPlugin : Plugin<Project> {
             description = "Generates a .tar.gz archive file of a native Java runtime image for '${options.name}'."
             from(project.tasks.getByName(jlinkTaskName).outputs)
             baseName = "${project.name}-${options.name.toLowerCase().replace(' ', '-')}"
-            compression = Compression.GZIP
-            extension = "tar.gz"
         }
     }
 

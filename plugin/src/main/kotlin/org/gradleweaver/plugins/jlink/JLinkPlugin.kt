@@ -3,7 +3,6 @@ package org.gradleweaver.plugins.jlink
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.ApplicationPlugin
-import org.gradle.api.tasks.bundling.Compression
 import org.gradle.api.tasks.bundling.Tar
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.kotlin.dsl.create
@@ -66,13 +65,13 @@ open class JLinkPlugin : Plugin<Project> {
             group = JLINK_TASK_GROUP
             description = "Generates a .zip archive file of a native Java runtime image for '${options.name}'."
             from(project.tasks.getByName(jlinkTaskName).outputs)
+            baseName = "${project.name}-${options.name.toLowerCase().replace(' ', '-')}"
         }
         project.tasks.register(generateJLinkArchiveTaskName("Tar", options.name), Tar::class.java) {
             group = JLINK_TASK_GROUP
             description = "Generates a .tar.gz archive file of a native Java runtime image for '${options.name}'."
             from(project.tasks.getByName(jlinkTaskName).outputs)
-            compression = Compression.GZIP
-            extension = "tar.gz"
+            baseName = "${project.name}-${options.name.toLowerCase().replace(' ', '-')}"
         }
     }
 

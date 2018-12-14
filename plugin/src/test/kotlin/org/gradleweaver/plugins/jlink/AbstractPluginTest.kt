@@ -26,7 +26,7 @@ abstract class AbstractPluginTest {
     protected fun pluginsBlock() =
         """
         plugins {
-            id("org.gradleweaver.plugins.simple-jlink")
+            id("org.gradleweaver.simple-jlink")
         }
         """.trimIndent()
 

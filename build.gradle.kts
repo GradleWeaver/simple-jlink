@@ -17,7 +17,7 @@ allprojects {
 
 project(":samples") {
     subprojects {
-        apply(plugin = "org.gradleweaver.plugins.simple-jlink")
+        apply(plugin = "org.gradleweaver.simple-jlink")
     }
 }
 

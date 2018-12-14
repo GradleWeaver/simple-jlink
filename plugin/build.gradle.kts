@@ -60,10 +60,11 @@ tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
-val registeredPlugin = gradlePlugin.plugins.register("jlink-plugin") {
-    id = "${project.group}.${project.name}"
+val registeredPlugin = gradlePlugin.plugins.register("JLinkPlugin") {
+    id = "org.gradleweaver.simple-jlink"
+    displayName = "Simple JLink"
     implementationClass = "org.gradleweaver.plugins.jlink.JLinkPlugin"
-    description = "A Gradle plugin for handling platform-specific dependencies and releases."
+    description = "Generate native runtime images for your application with the JLink tool"
 }
 
 pluginBundle {
@@ -72,7 +73,7 @@ pluginBundle {
     tags = listOf("jlink")
 
     plugins {
-        create("jlink-plugin") {
+        create("JLinkPlugin") {
             id = registeredPlugin.get().id
             displayName = registeredPlugin.get().displayName
         }
